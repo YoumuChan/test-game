@@ -1,0 +1,14 @@
+{
+  "name": "3sec-clash-online",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "8.23.0"
+  }
+}

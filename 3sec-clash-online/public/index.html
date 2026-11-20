@@ -1,0 +1,3125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3SEC CLASH - 동시 턴제 3초 심리전 카드 격투 게임</title>
+<style>
+:root {
+  --bg: #070913;
+  --panel: #0e1326;
+  --panel2: #141b33;
+  --border: #243055;
+  --text: #e8eefc;
+  --muted: #8a99bf;
+  --atk: #ff4d4d;
+  --def: #4da6ff;
+  --util: #4dff88;
+  --spec: #b84dff;
+  --p1: #00e5ff;
+  --p2: #ff2e63;
+  --gold: #facc15;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 25%, #121936 0%, var(--bg) 72%);
+  color: var(--text);
+  font-family: 'Pretendard', 'Malgun Gothic', 'Segoe UI', system-ui, sans-serif;
+}
+#app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 14px;
+  gap: 5px;
+}
+#top-bar {
+  height: 50px;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr 375px 1fr;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(20,27,51,0.95), rgba(11,15,30,0.95));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 5px 12px;
+  box-shadow: 0 0 22px rgba(0,0,0,0.55);
+}
+.fighter-hud {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.fighter-hud.p2 {
+  align-items: flex-end;
+}
+.hud-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+.fighter-hud.p2 .hud-row {
+  flex-direction: row-reverse;
+}
+.name-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fighter-hud.p2 .name-tag {
+  flex-direction: row-reverse;
+}
+.p1-color { color: var(--p1); text-shadow: 0 0 10px rgba(0,229,255,0.6); }
+.p2-color { color: var(--p2); text-shadow: 0 0 10px rgba(255,46,99,0.6); }
+.energy-badge {
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(250,204,21,0.18);
+  border: 1px solid #facc15;
+  color: #fde047;
+  box-shadow: 0 0 8px rgba(250,204,21,0.45);
+  display: none;
+}
+.energy-badge.on {
+  display: inline-block;
+}
+.pips {
+  display: flex;
+  gap: 4px;
+}
+.pip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #42527a;
+  background: #0a0f1f;
+  transition: all 0.25s;
+}
+.pip.win-p1 {
+  background: var(--p1);
+  border-color: #aef7ff;
+  box-shadow: 0 0 10px var(--p1);
+}
+.pip.win-p2 {
+  background: var(--p2);
+  border-color: #ff99b3;
+  box-shadow: 0 0 10px var(--p2);
+}
+.hp-track {
+  width: 100%;
+  height: 13px;
+  background: #090d1a;
+  border: 1px solid #2b3863;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.hp-fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.14s ease-out;
+}
+.hp-fill.p1 {
+  background: linear-gradient(90deg, #0077ff, #00e5ff);
+  box-shadow: 0 0 12px rgba(0,229,255,0.65);
+}
+.hp-fill.p2 {
+  margin-left: auto;
+  background: linear-gradient(270deg, #b8003c, #ff2e63);
+  box-shadow: 0 0 12px rgba(255,46,99,0.65);
+}
+.hp-num {
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+}
+#center-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.center-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.round-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--gold);
+  background: rgba(250,204,21,0.12);
+  border: 1px solid rgba(250,204,21,0.45);
+  padding: 2px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.diff-group {
+  display: flex;
+  gap: 2px;
+}
+.diff-btn {
+  background: #0b1022;
+  color: var(--muted);
+  border: 1px solid #29365c;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.diff-btn:hover {
+  color: var(--text);
+  border-color: #4f67a8;
+}
+.diff-btn.active {
+  background: linear-gradient(135deg, #0284c7, #6366f1);
+  color: #fff;
+  border-color: #93c5fd;
+  box-shadow: 0 0 10px rgba(99,102,241,0.6);
+}
+.hud-mini-btn {
+  background: #0b1022;
+  color: #cbd5e1;
+  border: 1px solid #29365c;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hud-mini-btn:hover {
+  border-color: #38bdf8;
+  color: #fff;
+}
+.hud-mini-btn.on {
+  color: var(--p1);
+  border-color: rgba(0,229,255,0.5);
+}
+.timer-wrap {
+  width: 100%;
+  height: 13px;
+  background: #080c18;
+  border: 1px solid #2c3a66;
+  border-radius: 7px;
+  position: relative;
+  overflow: hidden;
+}
+#timer-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #f59e0b, #facc15);
+  transition: width 0.08s linear;
+}
+#timer-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 1px 3px #000;
+  letter-spacing: 0.5px;
+}
+#p2-zone {
+  height: 92px;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr 270px;
+  gap: 10px;
+}
+.zone-box {
+  background: rgba(14,19,38,0.88);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 5px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.zone-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  letter-spacing: 0.4px;
+}
+.p2-hand-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+  flex: 1;
+  min-height: 0;
+}
+.slot-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+}
+.mini-card {
+  background: linear-gradient(160deg, #171f3b, #0c1124);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: opacity 0.15s;
+  min-width: 0;
+}
+.mini-card.cat-atk { border-color: var(--atk); box-shadow: inset 0 0 10px rgba(255,77,77,0.16); }
+.mini-card.cat-def { border-color: var(--def); box-shadow: inset 0 0 10px rgba(77,166,255,0.16); }
+.mini-card.cat-util { border-color: var(--util); box-shadow: inset 0 0 10px rgba(77,255,136,0.16); }
+.mini-card.cat-spec { border-color: var(--spec); box-shadow: inset 0 0 10px rgba(184,77,255,0.18); }
+.mini-card.used {
+  opacity: 0.28;
+  filter: grayscale(0.6);
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.card-name {
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-cat {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.cat-atk .card-cat { background: rgba(255,77,77,0.22); color: #ff8a8a; }
+.cat-def .card-cat { background: rgba(77,166,255,0.22); color: #8ac8ff; }
+.cat-util .card-cat { background: rgba(77,255,136,0.2); color: #8affb2; }
+.cat-spec .card-cat { background: rgba(184,77,255,0.24); color: #d999ff; }
+.card-frames {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: rgba(5,8,18,0.65);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+.f-s { color: #facc15; }
+.f-a { color: #ff5555; }
+.f-r { color: #94a3b8; }
+.f-d { color: #fff; }
+.card-short {
+  font-size: 9.5px;
+  color: #c7d4f4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slot {
+  background: #0a0f21;
+  border: 2px dashed #2d3c68;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 4px;
+  min-width: 0;
+  transition: all 0.15s;
+}
+.slot.filled {
+  border-style: solid;
+  background: linear-gradient(160deg, #182140, #0d1328);
+}
+.slot.overflow-warn {
+  box-shadow: inset 0 0 12px rgba(239,68,68,0.55);
+  border-color: #ef4444 !important;
+}
+.slot.p1-slot.filled {
+  cursor: pointer;
+}
+.slot.p1-slot.filled:hover {
+  filter: brightness(1.18);
+}
+.slot-idx {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: 9px;
+  font-weight: 900;
+  color: var(--muted);
+}
+.slot-mod {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 8.5px;
+  font-weight: 900;
+  color: #fde047;
+}
+.slot-hidden {
+  border-style: solid;
+  border-color: #7e22ce;
+  background: radial-gradient(circle at 50% 45%, #2e1065, #0f0a24);
+  box-shadow: inset 0 0 14px rgba(168,85,247,0.35);
+}
+.slot-q {
+  font-size: 22px;
+  font-weight: 900;
+  color: #d8b4fe;
+  text-shadow: 0 0 12px #a855f7;
+}
+.slot-name {
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.slot-sub {
+  font-size: 9.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.slot.active-now {
+  box-shadow: 0 0 16px #facc15, inset 0 0 10px rgba(250,204,21,0.45);
+  border-color: #facc15 !important;
+}
+#arena-wrap {
+  flex: 1;
+  min-height: 125px;
+  position: relative;
+  border-radius: 12px;
+  border: 1px solid #2b3a69;
+  background: #060914;
+  overflow: hidden;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.85);
+}
+#arena {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#callout {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%) scale(0.7);
+  font-size: 38px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 2px;
+  pointer-events: none;
+  opacity: 0;
+  text-shadow: 0 0 22px currentColor, 0 4px 10px #000;
+  transition: transform 0.12s ease-out, opacity 0.16s ease-out;
+  white-space: nowrap;
+}
+#callout.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.06);
+}
+#phase-banner {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 13px;
+  border-radius: 999px;
+  background: rgba(9,13,28,0.88);
+  border: 1px solid #304173;
+  color: #dbeafe;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#summary-banner {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 8px;
+  background: rgba(11,16,34,0.92);
+  border: 1px solid rgba(250,204,21,0.55);
+  color: #fef08a;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.65);
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 94%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: none;
+}
+#summary-banner.show {
+  display: block;
+}
+#timeline-zone {
+  height: 74px;
+  flex-shrink: 0;
+  background: rgba(12,17,34,0.92);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 5px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.tl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 700;
+  gap: 8px;
+}
+.tl-legend {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.lg-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+#preview-status {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #7dd3fc;
+}
+#preview-status.warn {
+  color: #f87171;
+}
+#preview-status.bonus {
+  color: #fde047;
+}
+.tl-grid-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.tl-row {
+  display: grid;
+  grid-template-columns: 32px repeat(30, 1fr);
+  gap: 2px;
+  align-items: center;
+}
+.tl-label {
+  font-size: 10px;
+  font-weight: 900;
+}
+.tl-cell {
+  height: 15px;
+  border-radius: 3px;
+  background: #172038;
+  border: 1px solid #222e4f;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8.5px;
+  font-weight: 900;
+  transition: filter 0.1s;
+}
+.tl-cell.st-startup { background: #eab308; border-color: #fde047; color: #111; }
+.tl-cell.st-active { background: #ef4444; border-color: #fca5a5; color: #fff; }
+.tl-cell.st-recovery { background: #64748b; border-color: #94a3b8; color: #fff; }
+.tl-cell.st-stun { background: #9333ea; border-color: #d8b4fe; color: #fff; }
+.tl-cell.st-idle { background: #141c33; border-color: #202c4d; }
+.tl-cell.preview {
+  opacity: 0.75;
+  border-style: dashed;
+}
+.tl-cell.dim { opacity: 0.32; }
+.tl-cell.cur {
+  box-shadow: 0 0 10px #fff;
+  border-color: #fff !important;
+  z-index: 3;
+  transform: scaleY(1.16);
+}
+.tl-ticks {
+  display: grid;
+  grid-template-columns: 32px repeat(30, 1fr);
+  gap: 2px;
+  font-size: 8.5px;
+  color: #6b7ba6;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+#p1-zone {
+  height: 224px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(14,19,38,0.9);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px 4px 10px;
+  position: relative;
+}
+.p1-top {
+  height: 52px;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 330px 235px 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+.action-btns {
+  display: grid;
+  grid-template-columns: 1fr 76px;
+  gap: 6px;
+}
+#clash-btn {
+  background: linear-gradient(135deg, #00c6ff, #0072ff);
+  color: #fff;
+  border: 2px solid #7de8ff;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  box-shadow: 0 0 16px rgba(0,180,255,0.42);
+  transition: transform 0.1s, filter 0.15s, opacity 0.15s;
+}
+#clash-btn:hover:not(:disabled) {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+#clash-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+#clash-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+#replay-btn {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #cbd5e1;
+  border: 1px solid #475569;
+  border-radius: 9px;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+#replay-btn:hover:not(:disabled) {
+  border-color: #38bdf8;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(56,189,248,0.3);
+}
+#replay-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+#battle-log {
+  background: #090d1c;
+  border: 1px solid #233057;
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-size: 11px;
+  color: #b7c6eb;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+#battle-log::-webkit-scrollbar { width: 4px; }
+#battle-log::-webkit-scrollbar-thumb { background: #334575; border-radius: 2px; }
+.log-line strong { color: #fff; }
+.fan-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  padding-bottom: 2px;
+}
+.tcg-card {
+  width: 146px;
+  height: 152px;
+  margin: 0 -10px;
+  background: linear-gradient(165deg, #1b2547 0%, #0d1329 65%, #090d1d 100%);
+  border: 2.5px solid var(--border);
+  border-radius: 11px;
+  padding: 6px 7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transform-origin: 50% 130%;
+  transform: translateY(var(--fan-y, 0px)) rotate(var(--fan-rot, 0deg));
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s, filter 0.18s, opacity 0.18s;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.75);
+  z-index: var(--fan-z, 1);
+  flex-shrink: 0;
+}
+.tcg-card.cat-atk { border-color: var(--atk); box-shadow: 0 8px 20px rgba(0,0,0,0.75), inset 0 0 14px rgba(255,77,77,0.22); }
+.tcg-card.cat-def { border-color: var(--def); box-shadow: 0 8px 20px rgba(0,0,0,0.75), inset 0 0 14px rgba(77,166,255,0.22); }
+.tcg-card.cat-util { border-color: var(--util); box-shadow: 0 8px 20px rgba(0,0,0,0.75), inset 0 0 14px rgba(77,255,136,0.2); }
+.tcg-card.cat-spec { border-color: var(--spec); box-shadow: 0 8px 20px rgba(0,0,0,0.75), inset 0 0 14px rgba(184,77,255,0.24); }
+.tcg-card.playable {
+  cursor: pointer;
+}
+.tcg-card.playable:hover {
+  transform: translateY(-28px) rotate(0deg) scale(1.13);
+  z-index: 40;
+  box-shadow: 0 16px 34px rgba(0,229,255,0.42), 0 0 18px rgba(255,255,255,0.25);
+}
+.tcg-card.used {
+  opacity: 0.25;
+  pointer-events: none;
+  filter: grayscale(0.75);
+  transform: translateY(18px) rotate(var(--fan-rot, 0deg)) scale(0.94);
+}
+.tcg-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 3px;
+}
+.tcg-key {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  color: #cbd5e1;
+  font-size: 9px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tcg-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.tcg-art {
+  height: 44px;
+  border-radius: 6px;
+  background: radial-gradient(circle at 50% 45%, rgba(255,255,255,0.12), rgba(6,10,22,0.85));
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.tcg-emblem {
+  font-size: 22px;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.45));
+}
+.tcg-dmg-gem {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(5,8,18,0.88);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+}
+.tcg-frame-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: rgba(4,7,16,0.82);
+  border-radius: 5px;
+  padding: 2px 4px;
+  font-size: 10px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.tcg-desc {
+  font-size: 9.5px;
+  line-height: 1.25;
+  color: #d6e2ff;
+  text-align: center;
+  background: rgba(9,13,28,0.65);
+  border-radius: 5px;
+  padding: 3px 4px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+#tooltip {
+  position: fixed;
+  z-index: 999;
+  pointer-events: none;
+  width: 270px;
+  background: rgba(8,12,26,0.97);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.85);
+  display: none;
+}
+#tooltip .tt-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+#tooltip .tt-stats {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 7px;
+  background: #101730;
+  padding: 4px 7px;
+  border-radius: 6px;
+}
+#tooltip .tt-desc {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #dbe6ff;
+}
+#overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgba(4,7,17,0.78);
+  backdrop-filter: blur(5px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#overlay.show {
+  display: flex;
+}
+.modal {
+  width: 420px;
+  background: linear-gradient(170deg, #151d3b, #0a0f22);
+  border: 2px solid #3c5291;
+  border-radius: 14px;
+  padding: 24px 26px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0,229,255,0.22);
+}
+.modal h2 {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+.modal p {
+  font-size: 13px;
+  color: #c2d0f2;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.modal-btn {
+  background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(0,210,255,0.4);
+}
+.modal-btn.sec {
+  background: #182242;
+  border: 1px solid #415899;
+  box-shadow: none;
+}
+.modal-btn:hover {
+  filter: brightness(1.12);
+}
+#title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  background: radial-gradient(circle at 50% 35%, #162147 0%, #060914 78%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#title-screen.hidden {
+  display: none;
+}
+.title-card {
+  width: 680px;
+  max-width: 96vw;
+  background: linear-gradient(175deg, rgba(19,27,56,0.96), rgba(9,13,28,0.98));
+  border: 2px solid #354a87;
+  border-radius: 18px;
+  padding: 30px 34px;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(0,229,255,0.18), 0 24px 60px rgba(0,0,0,0.85);
+}
+.title-sub-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--p1);
+  background: rgba(0,229,255,0.12);
+  border: 1px solid rgba(0,229,255,0.4);
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+}
+.title-logo {
+  font-size: 48px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, #00e5ff 0%, #ffffff 48%, #ff2e63 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 22px rgba(0,229,255,0.35));
+  margin-bottom: 6px;
+}
+.title-tagline {
+  font-size: 14px;
+  color: #b9c8ed;
+  margin-bottom: 22px;
+}
+.title-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 22px;
+  text-align: left;
+}
+.step-box {
+  background: rgba(10,15,32,0.85);
+  border: 1px solid #283766;
+  border-radius: 10px;
+  padding: 11px 12px;
+}
+.step-num {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.step-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 3px;
+}
+.step-desc {
+  font-size: 11px;
+  color: #9fb0db;
+  line-height: 1.4;
+}
+.title-diff-wrap {
+  margin-bottom: 22px;
+}
+.title-diff-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.title-diff-btns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.t-diff-btn {
+  background: #0b1024;
+  border: 2px solid #283766;
+  border-radius: 10px;
+  padding: 9px 10px;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.t-diff-btn strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.t-diff-btn span {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.t-diff-btn:hover {
+  border-color: #5472c4;
+}
+.t-diff-btn.active {
+  border-color: #00e5ff;
+  background: linear-gradient(160deg, rgba(0,229,255,0.16), rgba(99,102,241,0.18));
+  color: #fff;
+  box-shadow: 0 0 18px rgba(0,229,255,0.25);
+}
+.title-cta-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 12px;
+}
+.btn-start-main {
+  background: linear-gradient(135deg, #00c6ff, #0072ff);
+  border: 2px solid #7de8ff;
+  border-radius: 11px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 900;
+  padding: 13px 20px;
+  cursor: pointer;
+  box-shadow: 0 0 26px rgba(0,180,255,0.45);
+  transition: transform 0.12s, filter 0.15s;
+}
+.btn-start-main:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px);
+}
+.btn-guide-main {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 2px solid #475569;
+  border-radius: 11px;
+  color: #e2e8f0;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 13px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-guide-main:hover {
+  border-color: #facc15;
+  color: #fef08a;
+}
+#guide-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 980;
+  background: rgba(4,7,17,0.84);
+  backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+#guide-modal.show {
+  display: flex;
+}
+.guide-box {
+  width: 780px;
+  max-width: 96vw;
+  height: 540px;
+  max-height: 90vh;
+  background: linear-gradient(175deg, #131b38, #090e20);
+  border: 2px solid #3c5291;
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 0 50px rgba(0,0,0,0.9);
+}
+.guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.guide-header h3 {
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+}
+.guide-close {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 5px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.guide-close:hover {
+  border-color: #ff4d4d;
+  color: #fca5a5;
+}
+.guide-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #25335c;
+  padding-bottom: 8px;
+}
+.g-tab {
+  background: #0d1328;
+  border: 1px solid #2b3a69;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.g-tab.active {
+  background: linear-gradient(135deg, #0284c7, #4f46e5);
+  border-color: #93c5fd;
+  color: #fff;
+}
+.guide-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #d6e2ff;
+}
+.guide-body::-webkit-scrollbar { width: 5px; }
+.guide-body::-webkit-scrollbar-thumb { background: #334575; border-radius: 3px; }
+.g-panel {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+.g-panel.active {
+  display: flex;
+}
+.g-card {
+  background: rgba(10,15,32,0.85);
+  border: 1px solid #273663;
+  border-radius: 10px;
+  padding: 11px 14px;
+}
+.g-card h4 {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--p1);
+  margin-bottom: 5px;
+}
+.g-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.codex-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.codex-item {
+  background: #0b1024;
+  border-left: 4px solid var(--border);
+  border-top: 1px solid #1e2a4d;
+  border-right: 1px solid #1e2a4d;
+  border-bottom: 1px solid #1e2a4d;
+  border-radius: 7px;
+  padding: 7px 10px;
+}
+.codex-item.cat-atk { border-left-color: var(--atk); }
+.codex-item.cat-def { border-left-color: var(--def); }
+.codex-item.cat-util { border-left-color: var(--util); }
+.codex-item.cat-spec { border-left-color: var(--spec); }
+.codex-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 3px;
+}
+.codex-desc {
+  font-size: 11px;
+  color: #b4c4eb;
+  line-height: 1.35;
+}
+[hidden] { display: none !important; }
+#title-screen {
+  overflow-y: auto;
+  align-items: safe center;
+  background: radial-gradient(ellipse at 20% 64%, #102943 0%, transparent 38%), radial-gradient(ellipse at 80% 62%, #36152d 0%, transparent 42%), #070913;
+}
+.title-card {
+  position: relative;
+  isolation: isolate;
+  width: 720px;
+  padding-top: 25px;
+}
+.title-portraits {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: -1;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(#000 22%, transparent 61%);
+  mask-image: linear-gradient(#000 22%, transparent 61%);
+}
+.title-portrait {
+  position: absolute;
+  top: 9px;
+  width: 160px;
+  height: 120px;
+  background: url('/assets/duelists.webp') 0 0 / 480px 240px no-repeat;
+  filter: drop-shadow(0 0 17px #00e5ff55);
+  opacity: .8;
+}
+.title-portrait.reimu { left: 0; }
+.title-portrait.marisa {
+  right: 0;
+  background-position: 0 -120px;
+  transform: scaleX(-1);
+  filter: drop-shadow(0 0 17px #ff2e6366);
+}
+.online-controls {
+  margin: 0 0 17px;
+  padding: 11px 12px 10px;
+  border: 1px solid #394476;
+  border-radius: 11px;
+  background: linear-gradient(105deg, #10233a, #10152c 53%, #24152e);
+}
+.online-row, #join-form, .room-waiting {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+#join-form { flex: 1; }
+.room-btn, #room-code {
+  min-height: 37px;
+  padding: 5px 13px;
+  border: 1px solid #53689c;
+  border-radius: 7px;
+  background: #111b36;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+.room-btn { cursor: pointer; }
+.room-btn:hover { border-color: var(--p1); }
+.room-btn:disabled, .modal-btn:disabled { opacity: .55; cursor: default; }
+#join-btn { flex: 1; }
+#create-btn { flex: 1 0 auto; border-color: #2e9aad; color: #a5f3fc; }
+#room-code { width: 103px; text-align: center; letter-spacing: .16em; user-select: text; }
+#lobby-status {
+  min-height: 16px;
+  margin-top: 6px;
+  color: #b8c9ec;
+  font-size: 11px;
+}
+.room-waiting { justify-content: center; align-items: center; }
+#room-display {
+  color: var(--p1);
+  font: 900 24px ui-monospace, monospace;
+  letter-spacing: .22em;
+  user-select: text;
+}
+#room-tag {
+  padding: 2px 5px;
+  color: #a5f3fc;
+  font: 800 10px ui-monospace, monospace;
+  white-space: nowrap;
+}
+#timeline-zone .tl-grid-wrap { display: flex; flex-direction: column; }
+#tl-p2 { order: -1; }
+#p2-slots .slot-hidden { border-color: #89385a; background: radial-gradient(ellipse, #441934, #1b1128); }
+#p2-slots .slot-q { color: #fda4c5; text-shadow: 0 0 12px #e64985; }
+#p2-slots .slot, #p2-hand .mini-card { min-width: 0; }
+@media (max-height: 740px) {
+  .title-card { padding-block: 18px; }
+  .title-tagline, .title-steps, .title-diff-wrap { margin-bottom: 13px; }
+}
+@media (max-width: 850px) {
+  #app { padding-inline: 7px; }
+  #top-bar { grid-template-columns: minmax(0, 1fr) minmax(228px, 1.2fr) minmax(0, 1fr); padding-inline: 5px; gap: 5px; }
+  #diff-group { display: none; }
+  .p1-top { grid-template-columns: minmax(195px, 1.25fr) minmax(154px, .8fr) minmax(80px, 1fr); gap: 5px; }
+  .p1-top .slot, #p2-slots .slot { width: 100%; min-width: 0; }
+  #p2-zone { grid-template-columns: minmax(0, 3fr) minmax(180px, 1.4fr); gap: 5px; }
+  .p2-hand-row .mini-card { width: 100%; }
+  .tcg-card { width: 18%; margin-inline: -3px; }
+}
+@media (max-width: 560px) {
+  #app { height: 100dvh; overflow-y: auto; gap: 4px; }
+  .modal { width: min(420px, calc(100% - 24px)); }
+  .guide-box { padding: 13px 11px; }
+  .g-grid-2, .codex-grid { grid-template-columns: 1fr; }
+  .g-tab { padding-inline: 5px; }
+  #top-bar { height: 81px; grid-template-columns: 1fr 1fr; }
+  #center-hud { grid-area: 2 / 1 / 3 / 3; }
+  #p2-zone { display: flex; flex-direction: column; height: auto; }
+  #p2-zone .zone-box { padding: 3px 5px; gap: 2px; }
+  #p2-zone .card-short { display: none; }
+  #p2-zone .mini-card { padding: 2px 3px; min-height: 35px; }
+  #p2-zone .card-head { display: block; }
+  #p2-zone .card-cat { display: none; }
+  #p2-zone .card-name, #p2-zone .card-frames { font-size: 8px; }
+  #p2-slots .slot { height: 31px; min-height: 0; }
+  #p2-slots .slot-q { font-size: 14px; }
+  #p1-zone { height: 171px; padding-inline: 5px; }
+  .p1-top { grid-template-columns: minmax(0, 1.35fr) minmax(112px, 1fr); height: 40px; }
+  .action-btns { grid-template-columns: 1fr auto; }
+  #replay-btn { padding-inline: 4px; font-size: 9px; }
+  #clash-btn { font-size: 10px; }
+  #p1-slots .slot { height: 40px; }
+  #battle-log, .tcg-desc, .tcg-top .card-cat, #preview-status { display: none; }
+  .tcg-card { width: 19%; height: 110px; padding-inline: 3px; margin-inline: -1px; }
+  .tcg-title { font-size: 10px; }
+  .tcg-emblem { font-size: 25px; }
+  .tcg-frame-bar { gap: 1px; font-size: 8px; }
+  .tl-row, .tl-ticks { gap: 1px; grid-template-columns: 22px repeat(30, minmax(0, 1fr)); }
+  .tl-cell { font-size: 7px; }
+  #callout { font-size: 24px; }
+  #phase-banner { max-width: 94%; font-size: 9px; white-space: normal; text-align: center; }
+  .title-card { padding: 18px 12px; }
+  .title-logo { font-size: 38px; }
+  .title-portrait { opacity: .33; }
+  .title-tagline { font-size: 11px; }
+  .step-box { padding: 6px; }
+  .step-title { font-size: 10px; }
+  .step-desc { display: none; }
+  .t-diff-btn { padding: 5px; }
+  .t-diff-btn strong { font-size: 10px; }
+  .t-diff-btn span { display: none; }
+  .title-cta-row { gap: 6px; }
+  .title-cta-row button { padding: 9px 4px; font-size: 11px; }
+  #room-code { width: 83px; padding-inline: 4px; }
+  .room-btn { padding-inline: 7px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="top-bar">
+    <div class="fighter-hud p1">
+      <div class="hud-row">
+        <div class="name-tag">
+          <span class="p1-color" id="p1-name-label">나 · 레이무</span>
+          <div class="pips" id="p1-pips">
+            <div class="pip"></div>
+            <div class="pip"></div>
+          </div>
+          <span class="energy-badge" id="p1-energy-badge" title="잔여 10틱+ 기력 충전: 첫 카드 선딜 -1 / DMG +5">⚡ 기력충전</span>
+        </div>
+        <span class="hp-num p1-color" id="p1-hp-text">100 / 100</span>
+      </div>
+      <div class="hp-track"><div class="hp-fill p1" id="p1-hp-bar"></div></div>
+    </div>
+
+    <div id="center-hud">
+      <div class="center-top">
+        <button class="hud-mini-btn" id="title-btn" title="타이틀 화면으로">타이틀</button>
+        <span class="round-badge" id="round-label">ROUND 1/3 · TURN 1</span>
+        <span id="room-tag" hidden></span>
+        <div class="diff-group" id="diff-group">
+          <button class="diff-btn" data-diff="easy">쉬움</button>
+          <button class="diff-btn active" data-diff="normal">보통</button>
+          <button class="diff-btn" data-diff="hard">어려움</button>
+        </div>
+        <button class="hud-mini-btn" id="guide-btn" title="게임 설명 및 카드 도감">? 설명</button>
+        <button class="hud-mini-btn on" id="sfx-btn" title="효과음">SFX</button>
+      </div>
+      <div class="timer-wrap">
+        <div id="timer-fill"></div>
+        <div id="timer-text">작전 시간 15.0s</div>
+      </div>
+    </div>
+
+    <div class="fighter-hud p2">
+      <div class="hud-row">
+        <div class="name-tag">
+          <span class="p2-color" id="p2-name-label">상대 · 마리사</span>
+          <div class="pips" id="p2-pips">
+            <div class="pip"></div>
+            <div class="pip"></div>
+          </div>
+          <span class="energy-badge" id="p2-energy-badge" title="잔여 10틱+ 기력 충전: 첫 카드 선딜 -1 / DMG +5">⚡ 기력충전</span>
+        </div>
+        <span class="hp-num p2-color" id="p2-hp-text">100 / 100</span>
+      </div>
+      <div class="hp-track"><div class="hp-fill p2" id="p2-hp-bar"></div></div>
+    </div>
+  </header>
+
+  <section id="p2-zone">
+    <div class="zone-box">
+      <div class="zone-title">
+        <span>상대 공개 손패 (OPEN HAND)</span>
+        <span id="ai-meta" style="color:#a78bfa;">상대 손패 분석 대기</span>
+      </div>
+      <div class="p2-hand-row" id="p2-hand"></div>
+    </div>
+    <div class="zone-box">
+      <div class="zone-title">
+        <span>상대 배치 슬롯</span>
+        <span id="p2-slot-status">비공개 (?)</span>
+      </div>
+      <div class="slot-row" id="p2-slots"></div>
+    </div>
+  </section>
+
+  <main id="arena-wrap">
+    <canvas id="arena"></canvas>
+    <div id="phase-banner">작전 페이즈 · 1~3장을 슬롯에 배치하세요 (총 3라운드 · 2선승제)</div>
+    <div id="callout"></div>
+    <div id="summary-banner"></div>
+  </main>
+
+  <section id="timeline-zone">
+    <div class="tl-head">
+      <div class="tl-legend">
+        <span>30-TICK TIMELINE</span>
+        <span class="lg"><i class="lg-dot" style="background:#eab308"></i>선딜</span>
+        <span class="lg"><i class="lg-dot" style="background:#ef4444"></i>판정</span>
+        <span class="lg"><i class="lg-dot" style="background:#64748b"></i>후딜</span>
+        <span class="lg"><i class="lg-dot" style="background:#9333ea"></i>경직</span>
+      </div>
+      <span id="preview-status">카드를 배치하면 예상 타임라인이 실시간 표시됩니다</span>
+      <span id="tick-readout">TICK -- / 29</span>
+    </div>
+    <div class="tl-grid-wrap">
+      <div class="tl-row" id="tl-p1"></div>
+      <div class="tl-row" id="tl-p2"></div>
+      <div class="tl-ticks" id="tl-ticks"></div>
+    </div>
+  </section>
+
+  <section id="p1-zone">
+    <div class="p1-top">
+      <div class="slot-row" id="p1-slots"></div>
+      <div class="action-btns">
+        <button id="clash-btn" disabled>격돌 시작 (CLASH!)</button>
+        <button id="replay-btn" disabled title="직전 교전 30틱 다시보기">리플레이</button>
+      </div>
+      <div id="battle-log"></div>
+    </div>
+    <div class="fan-stage" id="p1-hand"></div>
+  </section>
+</div>
+
+<div id="title-screen">
+  <div class="title-card">
+    <div class="title-portraits" aria-hidden="true"><div class="title-portrait reimu"></div><div class="title-portrait marisa"></div></div>
+    <div class="title-sub-badge">SIMULTANEOUS 3.0s FRAME DUEL</div>
+    <h1 class="title-logo">3SEC CLASH</h1>
+    <p class="title-tagline">오픈 핸드 심리전 &amp; 30틱 프레임 격투 카드 배틀 (총 3라운드 · 3판 2선승제)</p>
+
+    <div class="title-steps">
+      <div class="step-box">
+        <div class="step-num">STEP 01 · 오픈 핸드</div>
+        <div class="step-title">상대 패 5장 완전 공개</div>
+        <div class="step-desc">상대가 가진 5장의 카드를 보고 어떤 순서로 낼지 수를 읽습니다.</div>
+      </div>
+      <div class="step-box">
+        <div class="step-num">STEP 02 · 15초 작전</div>
+        <div class="step-title">최대 3장 비공개 배치</div>
+        <div class="step-desc">선딜·판정·후딜을 조합해 슬롯 1~3에 배치하고 확정합니다.</div>
+      </div>
+      <div class="step-box">
+        <div class="step-num">STEP 03 · 3.0초 격돌</div>
+        <div class="step-title">0~29틱 동시 판정</div>
+        <div class="step-desc">카운터, 패링, 상쇄 돌파로 상대 HP 100을 먼저 0으로 만드세요!</div>
+      </div>
+    </div>
+
+    <div class="online-controls">
+      <div class="online-row" id="lobby-controls">
+        <button class="room-btn" id="create-btn" disabled>방 만들기</button>
+        <form id="join-form">
+          <input id="room-code" aria-label="4자리 방 코드" placeholder="방 코드" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" required>
+          <button class="room-btn" id="join-btn" disabled>방 참가</button>
+        </form>
+      </div>
+      <div class="room-waiting" id="room-waiting" hidden>
+        <strong id="room-display" aria-label="방 코드"></strong>
+        <button class="room-btn" id="copy-btn">코드 복사</button>
+        <button class="room-btn" id="cancel-btn">취소</button>
+      </div>
+      <p id="lobby-status" role="status">서버에 연결하는 중…</p>
+    </div>
+
+    <div class="title-diff-wrap">
+      <div class="title-diff-label">AI 난이도 선택</div>
+      <div class="title-diff-btns" id="title-diff-group">
+        <button class="t-diff-btn" data-diff="easy">
+          <strong>쉬움 (EASY)</strong>
+          <span>직관적인 1~2장 위주 플레이</span>
+        </button>
+        <button class="t-diff-btn active" data-diff="normal">
+          <strong>보통 (NORMAL)</strong>
+          <span>기댓값 계산 기반 균형 AI</span>
+        </button>
+        <button class="t-diff-btn" data-diff="hard">
+          <strong>어려움 (HARD)</strong>
+          <span>내시 균형 + 플레이어 습관 저격</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="title-cta-row">
+      <button class="btn-start-main" id="start-game-btn" disabled>AI 대전 시작</button>
+      <button class="btn-guide-main" id="open-guide-title-btn" disabled>게임 설명 &amp; 카드 도감</button>
+    </div>
+  </div>
+</div>
+
+<div id="guide-modal">
+  <div class="guide-box">
+    <div class="guide-header">
+      <h3>3SEC CLASH 게임 가이드</h3>
+      <button class="guide-close" id="close-guide-btn">닫기 (ESC)</button>
+    </div>
+    <div class="guide-tabs" id="guide-tabs">
+      <button class="g-tab active" data-tab="rules">1. 기본 진행 &amp; 승리 조건</button>
+      <button class="g-tab" data-tab="frames">2. 30틱 프레임 &amp; 상성</button>
+      <button class="g-tab" data-tab="codex">3. 전체 20종 카드 도감</button>
+    </div>
+    <div class="guide-body">
+      <div class="g-panel active" id="tab-rules">
+        <div class="g-card">
+          <h4>🏆 승리 조건: 총 3라운드 (3판 2선승제)</h4>
+          <p>• 매치는 <strong>최대 3라운드</strong>까지 진행되며, 먼저 <strong>2개 라운드</strong>를 따내면 최종 승리합니다.<br>• 각 라운드 시작 시 양쪽 모두 <strong>HP 100</strong>으로 시작하며, 상대 HP를 0 이하로 만들면 해당 라운드를 승리합니다.</p>
+        </div>
+        <div class="g-card">
+          <h4>🃏 오픈 핸드 &amp; 15초 작전 페이즈</h4>
+          <p>• 매 교전(턴)마다 20종 카드 풀에서 무작위 5장(공격 2장+, 방어/유틸 1장+ 보장)을 받습니다.<br>• 양측의 손패 5장은 모두 공개되지만, <strong>슬롯 1·2·3에 배치한 최대 3장의 순서</strong>는 격돌 전까지 <strong>'?'</strong>로 가려집니다.<br>• 제한 시간 <strong>15초</strong> 내에 하단 부채꼴 손패를 클릭(또는 숫자키 1~5)해 슬롯에 올리고 <strong>[배치 확정]</strong>을 누르세요. 두 플레이어가 모두 확정하거나 제한 시간이 끝나면 격돌이 시작됩니다. 배치가 비어 있으면 손패의 첫 카드가 자동 선택됩니다.</p>
+        </div>
+        <div class="g-card">
+          <h4>⚡ 잔여 틱 기력 충전 보너스</h4>
+          <p>• 3장을 모두 채우지 않고 1~2장만 배치해 <strong>10틱 이상을 남기고</strong> 교전을 마치면 다음 턴에 <strong>⚡ 기력충전</strong> 상태가 되어 첫 번째 카드의 <strong>선딜 -1틱 / 데미지 +5</strong> 보너스를 받습니다.</p>
+        </div>
+      </div>
+
+      <div class="g-panel" id="tab-frames">
+        <div class="g-card">
+          <h4>⏱ 30틱(3.0초) 프레임 구조 (1틱 = 0.1초)</h4>
+          <p>• <strong style="color:#facc15;">선딜 (Startup, 노랑)</strong>: 기술을 준비하는 시간. 이 구간에 공격을 맞으면 <strong>COUNTER!</strong>가 발생해 카드가 취소되고 2틱 경직됩니다.<br>• <strong style="color:#ff5555;">판정 (Active, 빨강)</strong>: 실제 공격 타격, 패링, 회피, 버프 효과가 발동하는 핵심 구간입니다.<br>• <strong style="color:#94a3b8;">후딜 (Recovery, 회색)</strong>: 기술 사용 후 자세를 거두는 빈틈 구간입니다.<br>• <strong style="color:#c084fc;">경직 (Stun, 보라)</strong>: 피격·상쇄·봉인 등으로 행동이 멈추는 구간이며, 경직 종료 후 다음 슬롯 카드를 이어서 실행합니다.</p>
+        </div>
+        <div class="g-grid-2">
+          <div class="g-card">
+            <h4>🔥 동시 상쇄 &amp; 상쇄 돌파</h4>
+            <p>• 양쪽 공격 판정이 같은 틱에 맞물리면 기본적으로 서로 무효화되며 2틱씩 뒤로 밀려납니다 (<strong>CLASH!</strong>).<br>• 단, 양쪽 공격의 <strong>데미지 차이가 20 이상</strong>이면 강한 공격이 약한 공격을 찍어 누르고 그대로 적중합니다 (<strong>HEAVY CLASH!</strong>).</p>
+          </div>
+          <div class="g-card">
+            <h4>🔄 계열별 핵심 상성</h4>
+            <p>• <strong style="color:#ff4d4d;">공격(빨강)</strong>: 상대 선딜·후딜을 끊고 피해<br>• <strong style="color:#4da6ff;">방어(파랑)</strong>: 공격을 패링 반격(25) 또는 무적 회피<br>• <strong style="color:#b84dff;">특수(보라)</strong>: <em>잡기</em>는 패링/회피 파괴(35), <em>슈퍼아머</em>는 선딜 피격 무시<br>• <strong style="color:#4dff88;">유틸(초록)</strong>: 후딜 캔슬, 선딜 가속, <em>페인트</em>로 패링 낚시</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="g-panel" id="tab-codex">
+        <div class="codex-grid" id="codex-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip">
+  <div class="tt-title"><span id="tt-name"></span><span id="tt-cat"></span></div>
+  <div class="tt-stats" id="tt-stats"></div>
+  <div class="tt-desc" id="tt-desc"></div>
+</div>
+
+<div id="overlay">
+  <div class="modal">
+    <h2 id="modal-title">ROUND 1 WIN</h2>
+    <p id="modal-desc"></p>
+    <div class="modal-actions">
+      <button class="modal-btn" id="modal-btn">계속하기</button>
+      <button class="modal-btn sec" id="modal-title-btn">타이틀로</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const PLAN_LIMIT = 15;
+const TICK_MS = 100;
+const HITSTOP_MS = 150;
+const FIGHTER_NAMES = ['레이무', '마리사'];
+const CARD_MAP = {};
+let CARDS = [];
+let CAT_INFO = {};
+let ATTACK_IDS = new Set();
+
+const AudioFX = (() => {
+  let ctx = null;
+  let enabled = true;
+  function init() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) ctx = new AC();
+    }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  }
+  function tone(freq, endFreq, dur, type, gainVal) {
+    if (!enabled) return;
+    init();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + dur);
+    g.gain.setValueAtTime(gainVal, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + dur);
+  }
+  return {
+    toggle() { enabled = !enabled; return enabled; },
+    isOn() { return enabled; },
+    click() { tone(520, 740, 0.05, 'triangle', 0.06); },
+    hit(heavy) {
+      tone(heavy ? 180 : 260, 42, heavy ? 0.19 : 0.11, 'sawtooth', heavy ? 0.16 : 0.11);
+      tone(heavy ? 90 : 120, 30, 0.14, 'square', 0.08);
+    },
+    parry() {
+      tone(1250, 2100, 0.14, 'triangle', 0.14);
+      tone(880, 1760, 0.18, 'sine', 0.1);
+    },
+    clash() {
+      tone(980, 320, 0.16, 'sawtooth', 0.14);
+      tone(1420, 600, 0.13, 'triangle', 0.11);
+    },
+    heavyClash() {
+      tone(760, 110, 0.24, 'sawtooth', 0.18);
+      tone(1500, 280, 0.18, 'square', 0.13);
+    },
+    guardBreak() {
+      tone(420, 70, 0.22, 'sawtooth', 0.18);
+      tone(160, 40, 0.24, 'square', 0.12);
+    },
+    dodge() { tone(420, 880, 0.1, 'sine', 0.08); },
+    bomb() { tone(140, 25, 0.28, 'sawtooth', 0.18); },
+    ko() {
+      tone(300, 55, 0.35, 'sawtooth', 0.18);
+      setTimeout(() => tone(180, 35, 0.4, 'square', 0.14), 120);
+    }
+  };
+})();
+
+const el = {
+  p1HpText: document.getElementById('p1-hp-text'),
+  p2HpText: document.getElementById('p2-hp-text'),
+  p1HpBar: document.getElementById('p1-hp-bar'),
+  p2HpBar: document.getElementById('p2-hp-bar'),
+  p1EnergyBadge: document.getElementById('p1-energy-badge'),
+  p2EnergyBadge: document.getElementById('p2-energy-badge'),
+  p1Pips: document.getElementById('p1-pips').children,
+  p2Pips: document.getElementById('p2-pips').children,
+  roundLabel: document.getElementById('round-label'),
+  p1NameLabel: document.getElementById('p1-name-label'),
+  p2NameLabel: document.getElementById('p2-name-label'),
+  diffGroup: document.getElementById('diff-group'),
+  titleBtn: document.getElementById('title-btn'),
+  guideBtn: document.getElementById('guide-btn'),
+  sfxBtn: document.getElementById('sfx-btn'),
+  timerFill: document.getElementById('timer-fill'),
+  timerText: document.getElementById('timer-text'),
+  p2Hand: document.getElementById('p2-hand'),
+  p2Slots: document.getElementById('p2-slots'),
+  p2SlotStatus: document.getElementById('p2-slot-status'),
+  aiMeta: document.getElementById('ai-meta'),
+  p1Hand: document.getElementById('p1-hand'),
+  p1Slots: document.getElementById('p1-slots'),
+  clashBtn: document.getElementById('clash-btn'),
+  replayBtn: document.getElementById('replay-btn'),
+  battleLog: document.getElementById('battle-log'),
+  tlP1: document.getElementById('tl-p1'),
+  tlP2: document.getElementById('tl-p2'),
+  tlTicks: document.getElementById('tl-ticks'),
+  previewStatus: document.getElementById('preview-status'),
+  tickReadout: document.getElementById('tick-readout'),
+  arena: document.getElementById('arena'),
+  callout: document.getElementById('callout'),
+  phaseBanner: document.getElementById('phase-banner'),
+  summaryBanner: document.getElementById('summary-banner'),
+  tooltip: document.getElementById('tooltip'),
+  ttName: document.getElementById('tt-name'),
+  ttCat: document.getElementById('tt-cat'),
+  ttStats: document.getElementById('tt-stats'),
+  ttDesc: document.getElementById('tt-desc'),
+  overlay: document.getElementById('overlay'),
+  modalTitle: document.getElementById('modal-title'),
+  modalDesc: document.getElementById('modal-desc'),
+  modalBtn: document.getElementById('modal-btn'),
+  modalTitleBtn: document.getElementById('modal-title-btn'),
+  titleScreen: document.getElementById('title-screen'),
+  titleDiffGroup: document.getElementById('title-diff-group'),
+  startGameBtn: document.getElementById('start-game-btn'),
+  openGuideTitleBtn: document.getElementById('open-guide-title-btn'),
+  guideModal: document.getElementById('guide-modal'),
+  closeGuideBtn: document.getElementById('close-guide-btn'),
+  guideTabs: document.getElementById('guide-tabs'),
+  codexGrid: document.getElementById('codex-grid'),
+  roomCode: document.getElementById('room-code'),
+  roomTag: document.getElementById('room-tag'),
+  createBtn: document.getElementById('create-btn'),
+  joinBtn: document.getElementById('join-btn'),
+  joinForm: document.getElementById('join-form'),
+  copyBtn: document.getElementById('copy-btn'),
+  cancelBtn: document.getElementById('cancel-btn'),
+  lobbyControls: document.getElementById('lobby-controls'),
+  roomWaiting: document.getElementById('room-waiting'),
+  roomDisplay: document.getElementById('room-display'),
+  lobbyStatus: document.getElementById('lobby-status')
+};
+
+const state = {
+  difficulty: 'normal',
+  round: 1,
+  turn: 1,
+  p1Wins: 0,
+  p2Wins: 0,
+  p1Hp: 100,
+  p2Hp: 100,
+  p1Energy: false,
+  p2Energy: false,
+  p1Hand: [],
+  p2Hand: [],
+  p1Slots: [],
+  p2Slots: [],
+  phase: 'title',
+  planTimer: PLAN_LIMIT,
+  mode: null,
+  seat: 0,
+  code: null,
+  cycle: 0,
+  revision: 0,
+  opponentCount: 0,
+  preview: null,
+  locked: false,
+  deadline: 0,
+  tickDue: 0,
+  suspendedPlan: null,
+  sim: null,
+  lastSim: null,
+  lastReplayMeta: null,
+  playTick: -1,
+  hitstop: 0,
+  shake: 0,
+  calloutTimer: 0,
+  particles: [],
+  floatTexts: [],
+  afterimages: [],
+  p1X: 0.28,
+  p2X: 0.72,
+  p1Flash: 0,
+  p2Flash: 0,
+  slashArcs: []
+};
+
+function syncDifficultyUI(diff) {
+  state.difficulty = diff;
+  Array.from(el.diffGroup.children).forEach(b => b.classList.toggle('active', b.dataset.diff === diff));
+  Array.from(el.titleDiffGroup.children).forEach(b => b.classList.toggle('active', b.dataset.diff === diff));
+  updateHud();
+  if (state.mode === 'ai') send({ type: 'difficulty', difficulty: diff, cycle: state.cycle });
+}
+
+function buildCodex() {
+  el.codexGrid.innerHTML = '';
+  CARDS.forEach(c => {
+    const item = document.createElement('div');
+    item.className = `codex-item cat-${c.cat}`;
+    item.innerHTML = `
+      <div class="codex-top">
+        <span>${c.id}. ${c.icon} ${c.name} <small style="color:${CAT_INFO[c.cat].color}">[${CAT_INFO[c.cat].label}]</small></span>
+        <span><span class="f-s">${c.s}</span>/<span class="f-a">${c.a}</span>/<span class="f-r">${c.r}</span> · DMG ${c.dmg}</span>
+      </div>
+      <div class="codex-desc">${c.desc}</div>
+    `;
+    el.codexGrid.appendChild(item);
+  });
+}
+
+function buildTimelineGrid() {
+  el.tlP1.innerHTML = '<div class="tl-label p1-color">나</div>';
+  el.tlP2.innerHTML = '<div class="tl-label p2-color">상대</div>';
+  el.tlTicks.innerHTML = '<div></div>';
+  for (let i = 0; i < 30; i++) {
+    const c1 = document.createElement('div');
+    c1.className = 'tl-cell st-idle';
+    c1.id = `tl-p1-${i}`;
+    el.tlP1.appendChild(c1);
+
+    const c2 = document.createElement('div');
+    c2.className = 'tl-cell st-idle';
+    c2.id = `tl-p2-${i}`;
+    el.tlP2.appendChild(c2);
+
+    const tk = document.createElement('div');
+    tk.textContent = (i % 5 === 0 || i === 29) ? i : '';
+    el.tlTicks.appendChild(tk);
+  }
+}
+
+function resetTimelineGrid() {
+  for (let i = 0; i < 30; i++) {
+    const c1 = document.getElementById(`tl-p1-${i}`);
+    const c2 = document.getElementById(`tl-p2-${i}`);
+    c1.className = 'tl-cell st-idle';
+    c1.textContent = '';
+    c2.className = 'tl-cell st-idle';
+    c2.textContent = '';
+  }
+  el.tickReadout.textContent = 'TICK -- / 29';
+}
+
+function renderPreviewTimeline() {
+  resetTimelineGrid();
+  if (state.p1Slots.length === 0) {
+    el.previewStatus.className = '';
+    el.previewStatus.textContent = state.p1Energy
+      ? '⚡ 기력충전 활성 (첫 카드 선딜 -1 / DMG +5)'
+      : '하단 부채꼴 손패에서 카드를 고르면 예상 타임라인이 표시됩니다';
+    return [];
+  }
+  const prev = state.preview;
+  if (!prev) {
+    el.previewStatus.className = '';
+    el.previewStatus.textContent = '배치 타임라인 불러오는 중…';
+    return [];
+  }
+  for (let i = 0; i < 30; i++) {
+    const c1 = document.getElementById(`tl-p1-${i}`);
+    const info = prev.ticks[i];
+    if (info) {
+      c1.className = `tl-cell st-${info.phase} preview`;
+      c1.textContent = info.slotIdx + 1;
+    }
+  }
+  if (prev.hasOverflow) {
+    el.previewStatus.className = 'warn';
+    el.previewStatus.textContent = `⚠ 30틱 초과 (${prev.totalTicks}틱) · 뒷슬롯 일부 발동 불가!`;
+  } else if (prev.idleTicks >= 10) {
+    el.previewStatus.className = 'bonus';
+    el.previewStatus.textContent = `예상 ${prev.totalTicks}틱 (잔여 ${prev.idleTicks}틱 → 다음 턴 ⚡기력충전 예약!)`;
+  } else {
+    el.previewStatus.className = '';
+    el.previewStatus.textContent = `예상 소모 ${prev.totalTicks}틱 (잔여 ${prev.idleTicks}틱)`;
+  }
+  return prev.slotInfos;
+}
+
+function populateTimelinePreview(timeline) {
+  resetTimelineGrid();
+  el.previewStatus.className = '';
+  el.previewStatus.textContent = '실시간 판정 타임라인 재생 중';
+  for (let i = 0; i < timeline.length; i++) {
+    const snap = timeline[i];
+    const c1 = document.getElementById(`tl-p1-${snap.tick}`);
+    const c2 = document.getElementById(`tl-p2-${snap.tick}`);
+    c1.className = `tl-cell st-${snap.p1.phase} dim`;
+    c2.className = `tl-cell st-${snap.p2.phase} dim`;
+    for (const ev of snap.events) {
+      let icon = '';
+      if (ev.type === 'HEAVY CLASH!') icon = '🔥';
+      else if (ev.type === 'CLASH!') icon = '⚡';
+      else if (ev.type === 'PARRY!' || ev.type === 'IRON WALL!') icon = '🛡';
+      else if (ev.type === 'GUARD BREAK!') icon = '💥';
+      else if (ev.type === 'COUNTER!' || ev.type === 'HIT') icon = '⚔';
+      else if (ev.type === 'BOMB!') icon = '💣';
+      else if (ev.type === 'K.O.!') icon = '☠';
+      else if (ev.type === 'SEALED!' || ev.type === 'BAITED!') icon = '✖';
+      if (icon) {
+        if (ev.side === 0 || ev.side === -1) c1.textContent = icon;
+        if (ev.side === 1 || ev.side === -1) c2.textContent = icon;
+      }
+    }
+  }
+}
+
+function highlightTimelineTick(tick) {
+  el.tickReadout.textContent = `TICK ${String(tick).padStart(2, '0')} / 29`;
+  for (let i = 0; i < 30; i++) {
+    const c1 = document.getElementById(`tl-p1-${i}`);
+    const c2 = document.getElementById(`tl-p2-${i}`);
+    c1.classList.remove('cur');
+    c2.classList.remove('cur');
+    if (i <= tick) {
+      c1.classList.remove('dim');
+      c2.classList.remove('dim');
+    }
+    if (i === tick) {
+      c1.classList.add('cur');
+      c2.classList.add('cur');
+    }
+  }
+}
+
+function showTooltip(card, e) {
+  const cat = CAT_INFO[card.cat];
+  el.tooltip.style.borderColor = cat.color;
+  el.ttName.textContent = `${card.id}. ${card.icon} ${card.name}`;
+  el.ttCat.textContent = cat.label;
+  el.ttCat.style.color = cat.color;
+  el.ttStats.innerHTML = `<span class="f-s">선딜 ${card.s}</span><span class="f-a">판정 ${card.a}</span><span class="f-r">후딜 ${card.r}</span><span class="f-d">DMG ${card.dmg}</span>`;
+  el.ttDesc.textContent = card.desc;
+  el.tooltip.style.display = 'block';
+  moveTooltip(e);
+}
+
+function moveTooltip(e) {
+  if (el.tooltip.style.display !== 'block') return;
+  const pad = 14;
+  let x = e.clientX + 16;
+  let y = e.clientY + 14;
+  const w = el.tooltip.offsetWidth;
+  const h = el.tooltip.offsetHeight;
+  if (x + w + pad > window.innerWidth) x = e.clientX - w - 16;
+  if (y + h + pad > window.innerHeight) y = e.clientY - h - 14;
+  el.tooltip.style.left = `${Math.max(8, x)}px`;
+  el.tooltip.style.top = `${Math.max(8, y)}px`;
+}
+
+function hideTooltip() {
+  el.tooltip.style.display = 'none';
+}
+
+function addLog(html) {
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.innerHTML = html;
+  el.battleLog.prepend(div);
+  while (el.battleLog.children.length > 26) {
+    el.battleLog.removeChild(el.battleLog.lastChild);
+  }
+}
+
+function updateHud() {
+  el.p1HpText.textContent = `${state.p1Hp} / 100`;
+  el.p2HpText.textContent = `${state.p2Hp} / 100`;
+  el.p1HpBar.style.width = `${Math.max(0, state.p1Hp)}%`;
+  el.p2HpBar.style.width = `${Math.max(0, state.p2Hp)}%`;
+  el.p1EnergyBadge.classList.toggle('on', state.p1Energy);
+  el.p2EnergyBadge.classList.toggle('on', state.p2Energy);
+  el.roundLabel.textContent = `ROUND ${state.round}/3 · TURN ${state.turn}`;
+  const diffNames = { easy: 'AI (쉬움)', normal: 'AI (보통)', hard: 'AI (어려움)' };
+  const [own, other] = localPair(FIGHTER_NAMES);
+  el.p1NameLabel.textContent = `나 · ${own}`;
+  el.p2NameLabel.textContent = `${state.mode === 'ai' ? diffNames[state.difficulty] : '상대'} · ${other}`;
+  el.diffGroup.hidden = state.mode === 'online';
+  el.roomTag.hidden = state.mode !== 'online';
+  el.roomTag.textContent = state.code ? `ROOM ${state.code}` : '';
+
+  for (let i = 0; i < 2; i++) {
+    el.p1Pips[i].className = 'pip' + (i < state.p1Wins ? ' win-p1' : '');
+    el.p2Pips[i].className = 'pip' + (i < state.p2Wins ? ' win-p2' : '');
+  }
+}
+
+function createP2MiniCard(cardId, isUsed) {
+  const c = CARD_MAP[cardId];
+  const div = document.createElement('div');
+  div.className = `mini-card cat-${c.cat}` + (isUsed ? ' used' : '');
+  div.innerHTML = `
+    <div class="card-head">
+      <span class="card-name">${c.icon} ${c.name}</span>
+      <span class="card-cat">${CAT_INFO[c.cat].label}</span>
+    </div>
+    <div class="card-frames">
+      <span><span class="f-s">${c.s}</span>/<span class="f-a">${c.a}</span>/<span class="f-r">${c.r}</span></span>
+      <span class="f-d">${c.dmg > 0 ? 'DMG ' + c.dmg : '특수'}</span>
+    </div>
+    <div class="card-short">${c.short}</div>
+  `;
+  div.addEventListener('mouseenter', e => showTooltip(c, e));
+  div.addEventListener('mousemove', moveTooltip);
+  div.addEventListener('mouseleave', hideTooltip);
+  return div;
+}
+
+function createP1FanCard(cardId, handIdx, totalCount, isUsed) {
+  const c = CARD_MAP[cardId];
+  const div = document.createElement('div');
+  const mid = (totalCount - 1) / 2;
+  const offset = handIdx - mid;
+  const rot = offset * 4.8;
+  const archY = Math.abs(offset) * Math.abs(offset) * 3.4;
+
+  div.className = `tcg-card cat-${c.cat}` + (state.phase === 'plan' && !state.locked && !isUsed ? ' playable' : '') + (isUsed ? ' used' : '');
+  div.style.setProperty('--fan-rot', `${rot}deg`);
+  div.style.setProperty('--fan-y', `${archY}px`);
+  div.style.setProperty('--fan-z', `${10 - Math.round(Math.abs(offset))}`);
+
+  div.innerHTML = `
+    <div class="tcg-top">
+      <span class="tcg-key">${handIdx + 1}</span>
+      <span class="tcg-title">${c.name}</span>
+      <span class="card-cat">${CAT_INFO[c.cat].label}</span>
+    </div>
+    <div class="tcg-art">
+      <span class="tcg-emblem">${c.icon}</span>
+      <span class="tcg-dmg-gem">${c.dmg > 0 ? 'DMG ' + c.dmg : CAT_INFO[c.cat].label}</span>
+    </div>
+    <div class="tcg-frame-bar">
+      <span class="f-s">선 ${c.s}</span>
+      <span class="f-a">판 ${c.a}</span>
+      <span class="f-r">후 ${c.r}</span>
+    </div>
+    <div class="tcg-desc">${c.short}</div>
+  `;
+  div.addEventListener('mouseenter', e => showTooltip(c, e));
+  div.addEventListener('mousemove', moveTooltip);
+  div.addEventListener('mouseleave', hideTooltip);
+  if (!isUsed && state.phase === 'plan' && !state.locked) {
+    div.addEventListener('click', () => onP1CardClick(cardId));
+  }
+  return div;
+}
+
+function renderHandsAndSlots() {
+  const slotInfos = state.phase === 'plan' ? renderPreviewTimeline() : [];
+
+  el.p2Hand.innerHTML = '';
+  state.p2Hand.forEach(id => {
+    const used = state.phase !== 'plan' && state.p2Slots.includes(id);
+    el.p2Hand.appendChild(createP2MiniCard(id, used));
+  });
+
+  el.p1Hand.innerHTML = '';
+  state.p1Hand.forEach((id, idx) => {
+    const used = state.p1Slots.includes(id);
+    el.p1Hand.appendChild(createP1FanCard(id, idx, state.p1Hand.length, used));
+  });
+
+  el.p1Slots.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const slot = document.createElement('div');
+    const cid = state.p1Slots[i];
+    if (cid) {
+      const c = CARD_MAP[cid];
+      const info = slotInfos[i];
+      const warnClass = (info && info.overflow) ? ' overflow-warn' : '';
+      slot.className = `slot p1-slot filled cat-${c.cat}${warnClass}`;
+      slot.style.borderColor = CAT_INFO[c.cat].color;
+      const frameStr = info ? `${info.sLen}/${info.aLen}/${info.rLen}` : `${c.s}/${c.a}/${c.r}`;
+      const modTag = (info && info.overflow) ? '초과!' : ((info && info.modified) ? '보정' : '');
+      slot.innerHTML = `<span class="slot-idx">${i + 1}</span>${modTag ? `<span class="slot-mod">${modTag}</span>` : ''}<div class="slot-name">${c.icon} ${c.name}</div><div class="slot-sub">${frameStr}</div>`;
+      slot.addEventListener('mouseenter', e => showTooltip(c, e));
+      slot.addEventListener('mousemove', moveTooltip);
+      slot.addEventListener('mouseleave', hideTooltip);
+      if (state.phase === 'plan' && !state.locked) {
+        slot.addEventListener('click', () => {
+          AudioFX.click();
+          hideTooltip();
+          setSelection(state.p1Slots.filter((_, index) => index !== i));
+        });
+      }
+    } else {
+      slot.className = 'slot p1-slot';
+      slot.innerHTML = `<span class="slot-idx">${i + 1}</span><div class="slot-sub">빈 슬롯</div>`;
+    }
+    slot.id = `p1-slot-${i}`;
+    el.p1Slots.appendChild(slot);
+  }
+
+  renderOpponentSlots();
+  el.clashBtn.textContent = state.locked && state.phase === 'plan' ? '배치 확정 완료' : '배치 확정 (LOCK IN)';
+  el.clashBtn.disabled = state.phase !== 'plan' || state.locked || state.p1Slots.length === 0;
+  el.replayBtn.disabled = state.phase !== 'plan' || state.locked || !state.lastSim;
+}
+
+function renderOpponentSlots() {
+  el.p2Slots.innerHTML = '';
+  const revealP2 = state.phase === 'clash' || state.phase === 'replay' || state.phase === 'round_end' || state.phase === 'turn_pause';
+  el.p2SlotStatus.textContent = revealP2 ? `${state.p2Slots.length}장 공개` : (state.mode === 'online' ? `${state.opponentCount}/3장 비공개` : '비공개 (?)');
+  for (let i = 0; i < 3; i++) {
+    const slot = document.createElement('div');
+    if (revealP2) {
+      const cid = state.p2Slots[i];
+      if (cid) {
+        const c = CARD_MAP[cid];
+        slot.className = `slot filled cat-${c.cat}`;
+        slot.style.borderColor = CAT_INFO[c.cat].color;
+        slot.innerHTML = `<span class="slot-idx">${i + 1}</span><div class="slot-name">${c.icon} ${c.name}</div><div class="slot-sub">${c.s}/${c.a}/${c.r}</div>`;
+        slot.addEventListener('mouseenter', e => showTooltip(c, e));
+        slot.addEventListener('mousemove', moveTooltip);
+        slot.addEventListener('mouseleave', hideTooltip);
+      } else {
+        slot.className = 'slot';
+        slot.innerHTML = `<span class="slot-idx">${i + 1}</span><div class="slot-sub">-</div>`;
+      }
+    } else if (state.mode !== 'online' || i < state.opponentCount) {
+      slot.className = 'slot slot-hidden';
+      slot.innerHTML = `<span class="slot-idx">${i + 1}</span><div class="slot-q">?</div>`;
+    } else {
+      slot.className = 'slot';
+      slot.innerHTML = `<span class="slot-idx">${i + 1}</span><div class="slot-sub">-</div>`;
+    }
+    slot.id = `p2-slot-${i}`;
+    el.p2Slots.appendChild(slot);
+  }
+}
+
+function highlightActiveSlots(p1Idx, p2Idx) {
+  for (let i = 0; i < 3; i++) {
+    const s1 = document.getElementById(`p1-slot-${i}`);
+    const s2 = document.getElementById(`p2-slot-${i}`);
+    if (s1) s1.classList.toggle('active-now', i === p1Idx);
+    if (s2) s2.classList.toggle('active-now', i === p2Idx);
+  }
+}
+
+function onP1CardClick(cardId) {
+  if (state.phase !== 'plan' || state.locked) return;
+  if (state.p1Slots.length >= 3) return;
+  if (state.p1Slots.includes(cardId)) return;
+  AudioFX.click();
+  setSelection([...state.p1Slots, cardId]);
+}
+
+function buildMatchSummary(timeline) {
+  const highlights = [];
+  for (const snap of timeline) {
+    for (const ev of snap.events) {
+      if (['COUNTER!', 'PARRY!', 'GUARD BREAK!', 'HEAVY CLASH!', 'CLASH!', 'BOMB!', 'SEALED!', 'BAITED!', 'K.O.!'].includes(ev.type) || (ev.type === 'HIT' && ev.dmg >= 25)) {
+        const who = ev.actor === 0 ? '나' : (ev.actor === 1 ? '상대' : '');
+        const cName = ev.cardId ? CARD_MAP[ev.cardId].name : '';
+        const dmgStr = ev.dmg ? ` (-${ev.dmg})` : '';
+        if (ev.type === 'CLASH!' || ev.type === 'K.O.!') {
+          highlights.push(`T${snap.tick} ${ev.type}`);
+        } else {
+          highlights.push(`T${snap.tick} ${who} ${cName} ${ev.type}${dmgStr}`);
+        }
+      }
+    }
+  }
+  if (highlights.length === 0) return '핵심 요약: 양측 견제 공방 (결정타 없음)';
+  return '핵심 요약: ' + highlights.slice(0, 3).join('  |  ');
+}
+
+function triggerCallout(text, color) {
+  el.callout.textContent = text;
+  el.callout.style.color = color || '#facc15';
+  el.callout.classList.add('show');
+  state.calloutTimer = 0.55;
+}
+
+function spawnParticles(nx, ny, color, count, speed) {
+  for (let i = 0; i < count; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = (0.3 + Math.random() * 0.7) * speed;
+    state.particles.push({
+      x: nx,
+      y: ny,
+      vx: Math.cos(ang) * spd,
+      vy: Math.sin(ang) * spd,
+      life: 0.28 + Math.random() * 0.3,
+      maxLife: 0.58,
+      size: 2.5 + Math.random() * 4.5,
+      color
+    });
+  }
+}
+
+function spawnFloatText(nx, ny, text, color) {
+  state.floatTexts.push({ x: nx, y: ny, text, color, life: 0.85, maxLife: 0.85 });
+}
+
+let socket = null;
+let pendingLobby = false;
+let clockOffset = null;
+
+function send(message) {
+  if (socket?.readyState !== WebSocket.OPEN) return false;
+  socket.send(JSON.stringify(message));
+  return true;
+}
+
+function localPair(pair) {
+  return state.seat === 0 ? pair : [pair[1], pair[0]];
+}
+
+function localSide(side) {
+  return state.seat === 1 && (side === 0 || side === 1) ? 1 - side : side;
+}
+
+function normalizeTimeline(timeline) {
+  if (state.seat === 0) return timeline;
+  return timeline.map(({ tick, p1, p2, events }) => ({
+    tick, p1: p2, p2: p1,
+    events: events.map(event => ({
+      ...event, side: localSide(event.side),
+      ...('actor' in event ? { actor: localSide(event.actor) } : {})
+    }))
+  }));
+}
+
+function localTime(serverTime, receivedServerTime) {
+  return serverTime + (clockOffset ?? (performance.now() - receivedServerTime));
+}
+
+function setLobby(waiting, message = '') {
+  el.lobbyControls.hidden = waiting;
+  el.roomWaiting.hidden = !waiting;
+  el.roomDisplay.textContent = waiting ? state.code : '';
+  el.lobbyStatus.textContent = message;
+  el.createBtn.disabled = pendingLobby;
+  el.joinBtn.disabled = pendingLobby;
+  el.startGameBtn.disabled = pendingLobby || waiting;
+}
+
+function requestMatch(request) {
+  if (pendingLobby || state.mode || !el.roomWaiting.hidden) return;
+  AudioFX.click();
+  pendingLobby = true;
+  setLobby(false, '대전 서버에 연결하는 중…');
+  if (send(request)) return;
+
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const ws = new WebSocket(`${protocol}//${location.host}/play`);
+  socket = ws;
+  clockOffset = null;
+  const timeout = setTimeout(() => {
+    if (ws === socket && ws.readyState === WebSocket.CONNECTING) ws.close();
+  }, 8000);
+
+  ws.addEventListener('open', () => {
+    if (ws !== socket) return;
+    clearTimeout(timeout);
+    send({ type: 'clock', sent: performance.now() });
+    send(request);
+  });
+  ws.addEventListener('message', ({ data }) => {
+    if (ws === socket) receive(JSON.parse(data));
+  });
+  ws.addEventListener('close', () => {
+    clearTimeout(timeout);
+    if (ws !== socket) return;
+    socket = null;
+    if (state.phase !== 'title' || state.mode) {
+      showDisconnect('서버와의 연결이 종료되었습니다.');
+    } else {
+      pendingLobby = false;
+      setLobby(false, '대전 서버에 연결할 수 없습니다. 잠시 후 다시 시도하세요.');
+    }
+  });
+}
+
+function receive(msg) {
+  if (msg.type === 'clock') {
+    clockOffset = (performance.now() + msg.sent) / 2 - msg.serverTime;
+    return;
+  }
+  if (msg.type === 'notice') {
+    pendingLobby = false;
+    setLobby(false, msg.text);
+    return;
+  }
+  if (msg.type === 'seat') {
+    pendingLobby = false;
+    state.seat = msg.seat;
+    state.mode = msg.mode;
+    state.code = msg.code;
+    if (msg.waiting) setLobby(true, '친구에게 방 코드를 알려주세요. 참가하면 바로 대전이 시작됩니다.');
+    return;
+  }
+  if (msg.type === 'opponent_left') {
+    showDisconnect('상대 플레이어가 연결을 종료했습니다.');
+    return;
+  }
+  if (msg.type === 'plan') {
+    applyPlan(msg);
+    return;
+  }
+  if (msg.cycle !== state.cycle) return;
+
+  switch (msg.type) {
+    case 'selection':
+      if (msg.revision !== state.revision) break;
+      if (state.phase === 'plan') {
+        state.p1Slots = msg.slots;
+        state.locked = msg.locked;
+        state.preview = msg.preview;
+        renderHandsAndSlots();
+      } else if (state.phase === 'replay' && state.suspendedPlan) {
+        state.suspendedPlan.p1Slots = msg.slots;
+        state.preview = msg.preview;
+      }
+      break;
+    case 'opponent_count':
+      state.opponentCount = msg.count;
+      if (state.phase === 'plan') renderOpponentSlots();
+      break;
+    case 'clash':
+      applyClash(msg);
+      break;
+    case 'turn_end':
+      finishPlayback();
+      [state.p1Energy, state.p2Energy] = localPair(msg.energy);
+      if (state.p1Energy) addLog('<span class="p1-color">나 · 기력 충전</span> 다음 턴 첫 카드 선딜 -1 / DMG +5');
+      if (state.p2Energy) addLog('<span class="p2-color">상대 · 기력 충전</span> 다음 턴 첫 카드 선딜 -1 / DMG +5');
+      updateHud();
+      el.phaseBanner.textContent = '교전 종료 · 다음 턴 준비 중';
+      break;
+    case 'round_end':
+      applyRoundEnd(msg);
+      break;
+    case 'rematch_status': {
+      const [ownReady, otherReady] = localPair(msg.ready);
+      el.modalBtn.disabled = ownReady;
+      el.modalBtn.textContent = ownReady ? '상대 동의 대기 중' : '재대결 (REMATCH)';
+      if (otherReady && !ownReady) el.modalDesc.textContent = '상대가 재대결에 동의했습니다.';
+      break;
+    }
+    case 'deadline':
+      if (clockOffset !== null) state.deadline = msg.deadline + clockOffset;
+      break;
+  }
+}
+
+function resetArena() {
+  state.p1X = 0.28;
+  state.p2X = 0.72;
+  state.p1Flash = 0;
+  state.p2Flash = 0;
+  state.particles = [];
+  state.floatTexts = [];
+  state.slashArcs = [];
+  state.afterimages = [];
+  state.shake = 0;
+  state.hitstop = 0;
+  state.calloutTimer = 0;
+  el.callout.classList.remove('show');
+}
+
+function planMessage() {
+  return state.locked
+    ? (state.mode === 'online' ? '배치 확정 · 상대의 선택을 기다리는 중' : '배치 확정 · AI가 수를 읽는 중')
+    : '작전 페이즈 · 하단 손패에서 1~3장을 배치하세요';
+}
+
+function applyPlan(msg) {
+  const [own, other] = localPair(msg.fighters);
+  Object.assign(state, {
+    phase: 'plan', cycle: msg.cycle, round: msg.round, turn: msg.turn,
+    p1Hp: own.hp, p2Hp: other.hp, p1Wins: own.wins, p2Wins: other.wins,
+    p1Energy: own.energy, p2Energy: other.energy, p1Hand: own.hand, p2Hand: other.hand,
+    p1Slots: [], p2Slots: [], opponentCount: 0, preview: null, revision: 0, locked: false,
+    sim: null, suspendedPlan: null, playTick: -1,
+    deadline: localTime(msg.deadline, msg.serverTime)
+  });
+  resetArena();
+  hideTooltip();
+  if (!el.titleScreen.classList.contains('hidden')) el.guideModal.classList.remove('show');
+  el.titleScreen.classList.add('hidden');
+  el.overlay.classList.remove('show');
+  el.summaryBanner.classList.remove('show');
+  if (msg.newRound) {
+    state.lastSim = null;
+    state.lastReplayMeta = null;
+    el.battleLog.innerHTML = '';
+    addLog(`<strong>[ROUND ${state.round} / 3]</strong> 양측 HP 100으로 교전을 시작합니다.`);
+  }
+  el.aiMeta.textContent = '공개 손패 5장';
+  el.phaseBanner.textContent = planMessage();
+  updateHud();
+  renderHandsAndSlots();
+  showPlanTimer(performance.now());
+  resizeCanvas();
+}
+
+function setSelection(slots, lock = false) {
+  const revision = state.revision + 1;
+  if (!send({ type: lock ? 'lock' : 'select', cycle: state.cycle, slots, revision })) return;
+  state.revision = revision;
+  if (!lock) state.preview = null;
+  state.p1Slots = slots;
+  state.locked = lock;
+  el.phaseBanner.textContent = planMessage();
+  renderHandsAndSlots();
+}
+
+function lockSelection() {
+  if (state.phase !== 'plan' || state.locked || state.p1Slots.length === 0) return;
+  AudioFX.click();
+  hideTooltip();
+  setSelection(state.p1Slots, true);
+}
+
+function applyClash(msg) {
+  const timeline = normalizeTimeline(msg.timeline);
+  const [p1Slots, p2Slots] = localPair(msg.slots);
+  const [p1StartHp, p2StartHp] = localPair(msg.startHp);
+  if (state.suspendedPlan) {
+    state.p1Hand = state.suspendedPlan.p1Hand;
+    state.p2Hand = state.suspendedPlan.p2Hand;
+    state.suspendedPlan = null;
+  }
+  state.lastSim = { timeline };
+  state.lastReplayMeta = { p1Slots, p2Slots, p1StartHp, p2StartHp, p1Hand: state.p1Hand, p2Hand: state.p2Hand };
+  hideTooltip();
+  el.summaryBanner.classList.remove('show');
+  el.aiMeta.textContent = msg.aiMeta || '공개 손패 5장';
+  const names = slots => slots.map(id => CARD_MAP[id].name).join(' → ');
+  addLog(`<span class="p1-color">나</span> [${names(p1Slots)}] vs <span class="p2-color">상대</span> [${names(p2Slots)}]`);
+  beginPlayback(false, localTime(msg.playAt, msg.serverTime));
+}
+
+function beginPlayback(replay, playAt) {
+  const { p1Slots, p2Slots, p1StartHp, p2StartHp, p1Hand, p2Hand } = state.lastReplayMeta;
+  Object.assign(state, {
+    phase: replay ? 'replay' : 'clash',
+    p1Slots, p2Slots, p1Hand, p2Hand, p1Hp: p1StartHp, p2Hp: p2StartHp,
+    sim: state.lastSim, playTick: -1, tickDue: playAt
+  });
+  resetArena();
+  el.phaseBanner.textContent = replay ? '리플레이 · 직전 교전 복기' : '격돌 · 30틱 타임라인 재생 중';
+  el.timerText.textContent = replay ? 'REPLAYING' : 'CLASH IN PROGRESS';
+  el.timerFill.style.width = '0%';
+  updateHud();
+  renderHandsAndSlots();
+  populateTimelinePreview(state.sim.timeline);
+}
+
+function startReplay() {
+  if (state.phase !== 'plan' || state.locked || !state.lastSim) return;
+  hideTooltip();
+  AudioFX.click();
+  state.suspendedPlan = {
+    p1Hp: state.p1Hp, p2Hp: state.p2Hp, p1Slots: state.p1Slots, p2Slots: state.p2Slots,
+    p1Hand: state.p1Hand, p2Hand: state.p2Hand
+  };
+  if (state.mode === 'ai') send({ type: 'replay', cycle: state.cycle });
+  beginPlayback(true, performance.now());
+}
+
+function finishPlayback() {
+  const replay = state.phase === 'replay';
+  if (state.phase !== 'clash' && !replay) return;
+  const { timeline } = state.sim;
+  while (state.playTick + 1 < timeline.length) processPlaybackTick(timeline[++state.playTick], replay);
+  highlightActiveSlots(-1, -1);
+  if (replay) {
+    Object.assign(state, state.suspendedPlan, { suspendedPlan: null, sim: null, phase: 'plan' });
+    resetArena();
+    el.phaseBanner.textContent = planMessage();
+    updateHud();
+    renderHandsAndSlots();
+    return;
+  }
+  state.phase = 'turn_pause';
+  el.summaryBanner.textContent = buildMatchSummary(timeline);
+  el.summaryBanner.classList.add('show');
+}
+
+function applyRoundEnd(msg) {
+  finishPlayback();
+  state.phase = 'round_end';
+  [state.p1Wins, state.p2Wins] = localPair(msg.wins);
+  state.p1Energy = state.p2Energy = false;
+  updateHud();
+  const winner = localSide(msg.winner);
+  const scores = `${state.p1Wins} : ${state.p2Wins}`;
+  const title = winner < 0 ? 'DOUBLE K.O.!'
+    : msg.matchOver ? (winner === 0 ? 'MATCH VICTORY!' : 'DEFEAT')
+    : `ROUND ${state.round} ${winner === 0 ? 'WIN' : 'LOSE'}`;
+  const description = winner < 0 ? '동시 K.O.로 같은 라운드를 다시 진행합니다.'
+    : msg.matchOver ? `최종 스코어 ${scores}` : `현재 스코어 ${scores}`;
+  const next = msg.matchOver ? '재대결 (REMATCH)' : `ROUND ${msg.nextRound} 시작`;
+  const online = state.mode === 'online';
+  const color = winner < 0 ? '#facc15' : winner === 0 ? '#00e5ff' : '#ff2e63';
+  showModal(title, description, next, color, () => {
+    el.modalBtn.disabled = true;
+    el.modalBtn.textContent = msg.matchOver && online ? '상대 동의 대기 중' : '준비 중';
+    send({ type: msg.matchOver ? 'rematch' : 'next_round', cycle: state.cycle });
+  });
+  if (msg.nextAt !== null) {
+    el.modalBtn.disabled = true;
+    el.modalBtn.textContent = `ROUND ${msg.nextRound} 자동 시작`;
+  }
+}
+
+function showModal(title, description, action, color, onAction) {
+  el.modalTitle.textContent = title;
+  el.modalTitle.style.color = color;
+  el.modalDesc.textContent = description;
+  el.modalBtn.textContent = action;
+  el.modalBtn.disabled = false;
+  el.modalBtn.hidden = !onAction;
+  el.modalBtn.onclick = onAction;
+  el.overlay.classList.add('show');
+}
+
+function showDisconnect(message) {
+  state.phase = 'disconnected';
+  state.sim = null;
+  el.titleScreen.classList.add('hidden');
+  el.guideModal.classList.remove('show');
+  hideTooltip();
+  renderHandsAndSlots();
+  showModal('연결 종료', message, '', '#ff2e63', null);
+}
+
+function returnToTitle() {
+  const ws = socket;
+  socket = null;
+  if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'leave' }));
+  ws?.close();
+  pendingLobby = false;
+  clockOffset = null;
+  Object.assign(state, {
+    phase: 'title', mode: null, cycle: 0, code: null, seat: 0,
+    sim: null, lastSim: null, suspendedPlan: null
+  });
+  hideTooltip();
+  el.overlay.classList.remove('show');
+  el.guideModal.classList.remove('show');
+  el.titleScreen.classList.remove('hidden');
+  setLobby(false);
+}
+
+function showPlanTimer(now) {
+  state.planTimer = Math.max(0, (state.deadline - now) / 1000);
+  el.timerFill.style.width = `${Math.min(100, (state.planTimer / PLAN_LIMIT) * 100)}%`;
+  el.timerText.textContent = state.planTimer > 0
+    ? `작전 시간 ${state.planTimer.toFixed(1)}s`
+    : '시간 종료 · 서버 판정 대기';
+}
+
+let lastTime = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000));
+  lastTime = now;
+  if (state.calloutTimer > 0) {
+    state.calloutTimer -= dt;
+    if (state.calloutTimer <= 0) el.callout.classList.remove('show');
+  }
+  if (state.phase === 'plan') showPlanTimer(now);
+  if (state.phase === 'clash' || state.phase === 'replay') {
+    const replay = state.phase === 'replay';
+    if (replay && state.mode === 'online') {
+      el.timerText.textContent = `REPLAY · 남은 작전 시간 ${Math.max(0, (state.deadline - now) / 1000).toFixed(1)}s`;
+    }
+    while (now >= state.tickDue) {
+      const snap = state.sim.timeline[state.playTick + 1];
+      if (!snap) {
+        finishPlayback();
+        break;
+      }
+      state.playTick++;
+      processPlaybackTick(snap, replay);
+      const stop = snap.events.some(event => event.hitstop);
+      state.tickDue += TICK_MS + (stop ? HITSTOP_MS : 0);
+      state.hitstop = stop ? HITSTOP_MS / 1000 : 0;
+    }
+    state.hitstop = Math.max(0, state.hitstop - dt);
+  }
+  if (state.phase !== 'title') renderArena(dt, now / 1000);
+  requestAnimationFrame(loop);
+}
+
+el.clashBtn.addEventListener('click', lockSelection);
+el.replayBtn.addEventListener('click', startReplay);
+el.startGameBtn.addEventListener('click', () => requestMatch({ type: 'ai', difficulty: state.difficulty }));
+el.createBtn.addEventListener('click', () => requestMatch({ type: 'create' }));
+el.joinForm.addEventListener('submit', e => {
+  e.preventDefault();
+  if (el.roomCode.validity.valid) requestMatch({ type: 'join', code: el.roomCode.value });
+});
+el.roomCode.addEventListener('input', () => { el.roomCode.value = el.roomCode.value.replace(/[^0-9]/g, ''); });
+el.copyBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(state.code);
+    el.lobbyStatus.textContent = '방 코드를 복사했습니다.';
+  } catch {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(el.roomDisplay);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    el.lobbyStatus.textContent = '선택한 방 코드를 복사해서 공유하세요.';
+  }
+});
+for (const button of [el.titleBtn, el.modalTitleBtn, el.cancelBtn]) {
+  button.addEventListener('click', () => {
+    AudioFX.click();
+    returnToTitle();
+  });
+}
+
+function processPlaybackTick(snap, isReplay = false) {
+  state.p1Hp = snap.p1.hp;
+  state.p2Hp = snap.p2.hp;
+  updateHud();
+  highlightTimelineTick(snap.tick);
+  highlightActiveSlots(snap.p1.cardId ? snap.p1.slotIdx : -1, snap.p2.cardId ? snap.p2.slotIdx : -1);
+
+  if (snap.p1.phase === 'active' && snap.p1.cardId) {
+    if (ATTACK_IDS.has(snap.p1.cardId) && snap.p1.phaseTick === 0) {
+      state.slashArcs.push({ side: 0, cardId: snap.p1.cardId, life: 0.22, maxLife: 0.22 });
+    }
+    if (snap.p1.cardId === 4 && snap.p1.phaseTick % 2 === 0) {
+      state.afterimages.push({ side: 0, x: state.p1X, life: 0.28, maxLife: 0.28 });
+    }
+  }
+  if (snap.p2.phase === 'active' && snap.p2.cardId) {
+    if (ATTACK_IDS.has(snap.p2.cardId) && snap.p2.phaseTick === 0) {
+      state.slashArcs.push({ side: 1, cardId: snap.p2.cardId, life: 0.22, maxLife: 0.22 });
+    }
+    if (snap.p2.cardId === 4 && snap.p2.phaseTick % 2 === 0) {
+      state.afterimages.push({ side: 1, x: state.p2X, life: 0.28, maxLife: 0.28 });
+    }
+  }
+
+  for (const ev of snap.events) {
+    const tx = ev.side === 0 ? state.p1X : (ev.side === 1 ? state.p2X : 0.5);
+    const ty = 0.52;
+
+    if (ev.type === 'HEAVY CLASH!') {
+      triggerCallout('HEAVY CLASH!', '#f97316');
+      spawnParticles(0.5, 0.52, '#f97316', 32, 0.65);
+      spawnParticles(tx, ty, '#facc15', 18, 0.5);
+      spawnFloatText(tx, 0.34, `-${ev.dmg}`, '#fb923c');
+      state.shake = 16;
+      if (ev.side === 0) state.p1Flash = 0.28; else state.p2Flash = 0.28;
+      AudioFX.heavyClash();
+      if (!isReplay) addLog(`T${snap.tick}: <strong>HEAVY CLASH!</strong> 상쇄 돌파 (-${ev.dmg})`);
+    } else if (ev.type === 'CLASH!') {
+      triggerCallout('CLASH!', '#facc15');
+      spawnParticles(0.5, 0.52, '#facc15', 26, 0.55);
+      spawnParticles(0.5, 0.52, '#ffffff', 12, 0.4);
+      state.shake = 12;
+      AudioFX.clash();
+      if (!isReplay) addLog(`T${snap.tick}: <strong>CLASH!</strong> 양측 공격 상쇄`);
+    } else if (ev.type === 'PARRY!') {
+      triggerCallout('PARRY!', '#38bdf8');
+      spawnParticles(tx, ty, '#38bdf8', 28, 0.55);
+      spawnFloatText(tx, 0.34, `-${ev.dmg}`, '#38bdf8');
+      state.shake = 13;
+      if (ev.side === 0) state.p1Flash = 0.25; else state.p2Flash = 0.25;
+      AudioFX.parry();
+      if (!isReplay) addLog(`T${snap.tick}: <strong>PARRY!</strong> 반격 ${ev.dmg} 피해`);
+    } else if (ev.type === 'GUARD BREAK!') {
+      triggerCallout('GUARD BREAK!', '#e879f9');
+      spawnParticles(tx, ty, '#e879f9', 30, 0.6);
+      spawnFloatText(tx, 0.34, `-${ev.dmg}`, '#e879f9');
+      state.shake = 15;
+      if (ev.side === 0) state.p1Flash = 0.3; else state.p2Flash = 0.3;
+      AudioFX.guardBreak();
+      if (!isReplay) addLog(`T${snap.tick}: <strong>GUARD BREAK!</strong> 방어 파괴 ${ev.dmg} 피해`);
+    } else if (ev.type === 'COUNTER!') {
+      triggerCallout('COUNTER!', '#facc15');
+      spawnParticles(tx, ty, '#facc15', 24, 0.52);
+      spawnParticles(tx, ty, '#ff4d4d', 14, 0.42);
+      spawnFloatText(tx, 0.34, `-${ev.dmg}`, '#facc15');
+      state.shake = 14;
+      if (ev.side === 0) state.p1Flash = 0.26; else state.p2Flash = 0.26;
+      AudioFX.hit(true);
+      if (!isReplay) addLog(`T${snap.tick}: <strong>COUNTER!</strong> 선딜 저격 ${ev.dmg} 피해`);
+    } else if (ev.type === 'HIT') {
+      spawnParticles(tx, ty, '#ff4d4d', 18, 0.45);
+      spawnFloatText(tx, 0.36, `-${ev.dmg}`, '#ff6b6b');
+      state.shake = Math.max(state.shake, ev.dmg >= 30 ? 12 : 7);
+      if (ev.side === 0) state.p1Flash = 0.2; else state.p2Flash = 0.2;
+      AudioFX.hit(ev.dmg >= 25);
+      if (!isReplay) addLog(`T${snap.tick}: ${ev.side === 0 ? 'P1' : 'P2'} 피격 -${ev.dmg}`);
+    } else if (ev.type === 'ARMOR!') {
+      triggerCallout('ARMOR!', '#c084fc');
+      spawnParticles(tx, ty, '#c084fc', 16, 0.42);
+      spawnFloatText(tx, 0.36, `-${ev.dmg} (ARMOR)`, '#d8b4fe');
+      state.shake = 8;
+      AudioFX.hit(false);
+      if (!isReplay) addLog(`T${snap.tick}: <strong>ARMOR!</strong> 경직 무시 (-${ev.dmg})`);
+    } else if (ev.type === 'DODGE!') {
+      triggerCallout('DODGE!', '#38bdf8');
+      spawnParticles(tx, ty, '#7dd3fc', 10, 0.3);
+      AudioFX.dodge();
+      if (!isReplay) addLog(`T${snap.tick}: <strong>DODGE!</strong> 공격 회피 (선딜 -2)`);
+    } else if (ev.type === 'BAITED!') {
+      triggerCallout('BAITED!', '#4dff88');
+      spawnParticles(tx, ty, '#4dff88', 20, 0.45);
+      state.shake = 8;
+      AudioFX.dodge();
+      if (!isReplay) addLog(`T${snap.tick}: <strong>BAITED!</strong> 패링 낚시 성공 (후딜 +4)`);
+    } else if (ev.type === 'IRON WALL!') {
+      triggerCallout('IRON WALL!', '#60a5fa');
+      spawnParticles(tx, ty, '#60a5fa', 22, 0.45);
+      state.shake = 9;
+      AudioFX.parry();
+      if (!isReplay) addLog(`T${snap.tick}: <strong>IRON WALL!</strong> 방어 성공 (다음 DMG +15)`);
+    } else if (ev.type === 'SEALED!') {
+      triggerCallout('SEALED!', '#c084fc');
+      spawnParticles(tx, ty, '#a855f7', 22, 0.45);
+      state.shake = 9;
+      AudioFX.guardBreak();
+      if (!isReplay) addLog(`T${snap.tick}: <strong>SEALED!</strong> 유틸 카드 봉인 (3틱 경직)`);
+    } else if (ev.type === 'BOMB!') {
+      triggerCallout('BOMB!', '#f97316');
+      spawnParticles(tx, ty, '#f97316', 32, 0.62);
+      spawnFloatText(tx, 0.32, `-${ev.dmg}`, '#fb923c');
+      state.shake = 15;
+      if (ev.side === 0) state.p1Flash = 0.28; else state.p2Flash = 0.28;
+      AudioFX.bomb();
+      if (!isReplay) addLog(`T${snap.tick}: <strong>BOMB!</strong> 시한부적 폭발 -${ev.dmg}`);
+    } else if (ev.type === 'HEAL') {
+      spawnFloatText(tx, 0.34, `+${ev.dmg}`, '#4dff88');
+      spawnParticles(tx, ty, '#4dff88', 10, 0.3);
+    } else if (ev.type === 'BLOOD') {
+      spawnFloatText(tx, 0.38, `-${ev.dmg}`, '#ff758f');
+    } else if (ev.type === 'K.O.!') {
+      triggerCallout('K.O.!', '#facc15');
+      state.shake = 20;
+      AudioFX.ko();
+    }
+  }
+
+}
+
+const ctx = el.arena.getContext('2d');
+function resizeCanvas() {
+  const rect = el.arena.parentElement.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  el.arena.width = Math.max(300, Math.floor(rect.width * dpr));
+  el.arena.height = Math.max(125, Math.floor(rect.height * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resizeCanvas);
+
+const spriteAtlas = new Image();
+spriteAtlas.src = '/assets/duelists.webp';
+
+function drawStage(w, h, floor, time) {
+  const sky = ctx.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, '#070916');
+  sky.addColorStop(.65, '#1a1b38');
+  sky.addColorStop(1, '#15152c');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, h);
+
+  const mid = w * .5;
+  const horizon = h * .66;
+  const moonR = Math.min(76, h * .25);
+  const moonY = h * .36;
+  const glow = ctx.createRadialGradient(mid, moonY, moonR * .25, mid, moonY, moonR * 2.5);
+  glow.addColorStop(0, '#59568275');
+  glow.addColorStop(1, '#41366b00');
+  ctx.fillStyle = glow;
+  ctx.fillRect(mid - moonR * 2.5, 0, moonR * 5, floor);
+  ctx.strokeStyle = '#9b8fc647';
+  ctx.fillStyle = '#802f4c55';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(mid, moonY, moonR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  for (let i = 0; i < 44; i++) {
+    const x = (i * 167 % 1277) / 1277 * w;
+    const y = (i * 59 % 173) / 173 * horizon;
+    ctx.fillStyle = i % 3 === 0 ? '#e2d9ff75' : '#aaade831';
+    ctx.fillRect(x, y, i % 4 === 0 ? 2 : 1, 1);
+  }
+
+  for (let layer = 0; layer < 2; layer++) {
+    ctx.fillStyle = layer ? '#0c1026' : '#221e3b';
+    ctx.beginPath();
+    ctx.moveTo(0, horizon);
+    for (let i = 0; i <= 18; i++) {
+      const x = i / 18 * w;
+      const rise = ((i * 43 + layer * 19) % 31) / 31 * h * (layer ? .12 : .22);
+      ctx.lineTo(x, horizon - rise);
+    }
+    ctx.lineTo(w, floor);
+    ctx.lineTo(0, floor);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(mid, horizon);
+  const gate = Math.min(w * .3, h * .62);
+  ctx.scale(gate, gate);
+  ctx.fillStyle = '#090b20';
+  ctx.strokeStyle = '#b2567748';
+  ctx.lineWidth = .01;
+  ctx.beginPath();
+  ctx.moveTo(-.55, -.62);
+  ctx.quadraticCurveTo(0, -.52, .55, -.62);
+  ctx.lineTo(.50, -.52);
+  ctx.quadraticCurveTo(0, -.44, -.50, -.52);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillRect(-.46, -.38, .92, .055);
+  ctx.fillRect(-.33, -.52, .07, .54);
+  ctx.fillRect(.26, -.52, .07, .54);
+  ctx.fillRect(-.045, -.48, .09, .19);
+  ctx.restore();
+
+  const floorGrad = ctx.createLinearGradient(0, horizon, 0, h);
+  floorGrad.addColorStop(0, '#11122a');
+  floorGrad.addColorStop(1, '#0b1026');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, horizon, w, h - horizon);
+  ctx.strokeStyle = '#9865d62b';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = -9; i <= 9; i++) {
+    ctx.moveTo(mid + i * w * .035, horizon);
+    ctx.lineTo(mid + i * w * .11, h);
+  }
+  for (const k of [0, .12, .3, .54, .82]) {
+    const y = horizon + (h - horizon) * k;
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+  }
+  ctx.stroke();
+
+  for (let i = 0; i < 13; i++) {
+    const x = (i * 97 + time * (5 + i % 3)) % w;
+    const y = horizon * (.18 + (i * 31 % 79) / 100) + Math.sin(time + i) * 5;
+    ctx.fillStyle = i % 2 ? '#a5f3fc4d' : '#f9a8d461';
+    ctx.fillRect(x, y, 2, 2);
+  }
+}
+
+function drawFighter(x, floor, dir, color, snap, flash, time, fighter, hp, arenaHeight, arenaWidth) {
+  const phase = snap?.phase ?? 'idle';
+  const card = CARD_MAP[snap?.cardId];
+  const down = hp <= 0;
+  const guarding = down || (phase === 'active' && card?.cat === 'def');
+  const striking = phase === 'active' && card && ATTACK_IDS.has(card.id);
+  const frame = guarding ? 2 : striking ? 1 : 0;
+  const height = Math.max(65, Math.min(270, arenaHeight * .82, arenaWidth * .43)) * (dir > 0 ? 1 : .92);
+  const scale = height / 360;
+  const bob = phase === 'idle' && !down ? Math.sin(time * 4.2 + fighter) * 1.6 : 0;
+
+  ctx.save();
+  ctx.translate(x, floor);
+  ctx.fillStyle = color + '19';
+  ctx.strokeStyle = color + '66';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(0, 1, height * .26, height * .064, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.save();
+  ctx.translate((phase === 'stun' ? -5 * dir : 0), bob + (down ? height * .13 : 0));
+  ctx.scale(dir * scale, scale * (down ? .78 : 1));
+  if (spriteAtlas.complete && spriteAtlas.naturalWidth) {
+    ctx.globalAlpha *= down ? .52 : phase === 'active' && card?.id === 4 ? .55 : 1;
+    ctx.shadowColor = flash > 0 ? '#fff' : color;
+    ctx.shadowBlur = flash > 0 ? 18 : 7;
+    if (flash > 0) ctx.filter = 'brightness(1.45) saturate(1.15)';
+    ctx.drawImage(spriteAtlas, frame * 480, fighter * 360, 480, 360, -208, -343, 480, 360);
+  }
+  ctx.restore();
+
+  if (!down && (guarding || phase === 'startup' && (card?.id === 7 || card?.id === 16))) {
+    const aura = guarding ? '#7dd3fc' : card.id === 16 ? '#facc15' : '#d8b4fe';
+    ctx.strokeStyle = aura + 'b0';
+    ctx.shadowColor = aura;
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const angle = dir > 0 ? 0 : Math.PI;
+    ctx.arc(0, -height * .38, height * .34, angle - 1.02, angle + 1.02);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  ctx.font = '800 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = down ? '#a8a2bd' : phase === 'startup' ? '#facc15' : phase === 'stun' ? '#d8b4fe' : color;
+  const label = down ? 'K.O.' : phase === 'stun' ? 'STUN' : card?.name ?? FIGHTER_NAMES[fighter];
+  ctx.fillText(label, 0, height * .135 + 10);
+  ctx.restore();
+}
+
+function renderArena(dt, nowSec) {
+  const w = el.arena.clientWidth;
+  const h = el.arena.clientHeight;
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.save();
+  if (state.shake > 0.2) {
+    const sx = (Math.random() - 0.5) * state.shake;
+    const sy = (Math.random() - 0.5) * state.shake;
+    ctx.translate(sx, sy);
+    state.shake *= Math.pow(0.05, dt);
+  } else {
+    state.shake = 0;
+  }
+
+  const floorY = h * 0.79;
+  drawStage(w, h, floorY, nowSec);
+
+  const snap = (state.sim && state.playTick >= 0 && state.playTick < state.sim.timeline.length)
+    ? state.sim.timeline[state.playTick]
+    : null;
+
+  let targetP1X = 0.30;
+  let targetP2X = 0.70;
+  if (snap) {
+    if (snap.p1.phase === 'active' && ATTACK_IDS.has(snap.p1.cardId)) targetP1X = 0.44;
+    else if (snap.p1.phase === 'startup') targetP1X = 0.27;
+    else if (snap.p1.phase === 'stun') targetP1X = 0.22;
+    else if (snap.p1.phase === 'active' && snap.p1.cardId === 4) targetP1X = 0.24;
+
+    if (snap.p2.phase === 'active' && ATTACK_IDS.has(snap.p2.cardId)) targetP2X = 0.56;
+    else if (snap.p2.phase === 'startup') targetP2X = 0.73;
+    else if (snap.p2.phase === 'stun') targetP2X = 0.78;
+    else if (snap.p2.phase === 'active' && snap.p2.cardId === 4) targetP2X = 0.76;
+  }
+
+  const lerp = Math.min(1, dt * 16);
+  if (state.hitstop <= 0) {
+    state.p1X += (targetP1X - state.p1X) * lerp;
+    state.p2X += (targetP2X - state.p2X) * lerp;
+  }
+  if (state.p1Flash > 0) state.p1Flash = Math.max(0, state.p1Flash - dt);
+  if (state.p2Flash > 0) state.p2Flash = Math.max(0, state.p2Flash - dt);
+
+  for (let i = state.afterimages.length - 1; i >= 0; i--) {
+    const a = state.afterimages[i];
+    a.life -= dt;
+    if (a.life <= 0) { state.afterimages.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalAlpha = (a.life / a.maxLife) * 0.45;
+    const isOwn = a.side === 0;
+    drawFighter(a.x * w, isOwn ? floorY : floorY - h * .075, isOwn ? 1 : -1, isOwn ? '#00e5ff' : '#ff2e63',
+      null, 0, nowSec, isOwn ? state.seat : 1 - state.seat, 100, h, w);
+    ctx.restore();
+  }
+
+  drawFighter(state.p2X * w, floorY - h * .075, -1, '#ff2e63', snap?.p2, state.p2Flash, nowSec, 1 - state.seat, state.p2Hp, h, w);
+  drawFighter(state.p1X * w, floorY, 1, '#00e5ff', snap?.p1, state.p1Flash, nowSec, state.seat, state.p1Hp, h, w);
+
+  if (snap) {
+    const drawBombs = (bombs, targetX) => {
+      bombs.forEach((rem, idx) => {
+        if (rem < 0) return;
+        const bx = targetX * w + (idx - (bombs.length - 1) / 2) * 28;
+        const by = Math.max(38, floorY - h * .52);
+        ctx.save();
+        ctx.fillStyle = '#3b0764';
+        ctx.strokeStyle = rem <= 2 ? '#f97316' : '#c084fc';
+        ctx.lineWidth = 2;
+        ctx.fillRect(bx - 12, by - 14, 24, 28);
+        ctx.strokeRect(bx - 12, by - 14, 24, 28);
+        ctx.fillStyle = rem <= 2 ? '#facc15' : '#f5d0fe';
+        ctx.font = '900 12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(rem, bx, by + 4);
+        ctx.restore();
+      });
+    };
+    drawBombs(snap.p1.bombs, state.p2X);
+    drawBombs(snap.p2.bombs, state.p1X);
+  }
+
+  for (let i = state.slashArcs.length - 1; i >= 0; i--) {
+    const sl = state.slashArcs[i];
+    sl.life -= dt;
+    if (sl.life <= 0) { state.slashArcs.splice(i, 1); continue; }
+    const t = sl.life / sl.maxLife;
+    const ox = (sl.side === 0 ? state.p1X : state.p2X) * w;
+    const oy = floorY - 46;
+    const dir = sl.side === 0 ? 1 : -1;
+    const radius = sl.cardId === 16 ? 112 : (sl.cardId === 2 || sl.cardId === 10 ? 90 : 72);
+    ctx.save();
+    ctx.globalAlpha = t;
+    ctx.strokeStyle = sl.cardId === 16 ? '#facc15' : (sl.side === 0 ? '#38bdf8' : '#ff4d6d');
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.lineWidth = sl.cardId === 16 ? 12 : 7;
+    ctx.beginPath();
+    if (dir > 0) ctx.arc(ox + 18, oy, radius, -Math.PI * 0.42, Math.PI * 0.35);
+    else ctx.arc(ox - 18, oy, radius, Math.PI * 0.65, Math.PI * 1.42);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.life -= dt;
+    if (p.life <= 0) { state.particles.splice(i, 1); continue; }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 0.55 * dt;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x * w, p.y * h, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  for (let i = state.floatTexts.length - 1; i >= 0; i--) {
+    const ft = state.floatTexts[i];
+    ft.life -= dt;
+    if (ft.life <= 0) { state.floatTexts.splice(i, 1); continue; }
+    ft.y -= 0.12 * dt;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, (ft.life / ft.maxLife) * 1.4);
+    ctx.font = '900 20px Pretendard, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = ft.color;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#000';
+    ctx.fillText(ft.text, ft.x * w, ft.y * h);
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+function openGuide(tabName = 'rules') {
+  AudioFX.click();
+  hideTooltip();
+  Array.from(el.guideTabs.children).forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+  document.querySelectorAll('.g-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${tabName}`));
+  el.guideModal.classList.add('show');
+}
+
+el.guideBtn.addEventListener('click', () => openGuide('rules'));
+el.openGuideTitleBtn.addEventListener('click', () => openGuide('rules'));
+el.closeGuideBtn.addEventListener('click', () => {
+  AudioFX.click();
+  el.guideModal.classList.remove('show');
+});
+el.guideTabs.addEventListener('click', e => {
+  const btn = e.target.closest('.g-tab');
+  if (!btn) return;
+  openGuide(btn.dataset.tab);
+});
+
+el.diffGroup.addEventListener('click', e => {
+  const btn = e.target.closest('.diff-btn');
+  if (!btn || state.mode !== 'ai') return;
+  AudioFX.click();
+  syncDifficultyUI(btn.dataset.diff);
+});
+
+el.titleDiffGroup.addEventListener('click', e => {
+  const btn = e.target.closest('.t-diff-btn');
+  if (!btn) return;
+  AudioFX.click();
+  syncDifficultyUI(btn.dataset.diff);
+});
+
+el.sfxBtn.addEventListener('click', () => {
+  const on = AudioFX.toggle();
+  el.sfxBtn.classList.toggle('on', on);
+  el.sfxBtn.textContent = on ? 'SFX' : 'MUTE';
+});
+
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && el.guideModal.classList.contains('show')) {
+    el.guideModal.classList.remove('show');
+    return;
+  }
+  if (el.guideModal.classList.contains('show') || state.phase !== 'plan' || state.locked || e.repeat) return;
+  if (e.key >= '1' && e.key <= '5') {
+    const cardId = state.p1Hand[Number(e.key) - 1];
+    if (cardId !== undefined) onP1CardClick(cardId);
+  } else if (e.key === 'Backspace' && state.p1Slots.length > 0) {
+    e.preventDefault();
+    setSelection(state.p1Slots.slice(0, -1));
+  } else if (e.key === 'Enter') {
+    if (e.target.tagName !== 'BUTTON') lockSelection();
+  } else if (e.key.toLowerCase() === 'r') {
+    startReplay();
+  }
+});
+
+async function loadCards() {
+  try {
+    const response = await fetch('/cards.json');
+    if (!response.ok) throw new Error('Card data unavailable');
+    const { cards, categories, attacks } = await response.json();
+    CARDS = cards;
+    CAT_INFO = categories;
+    ATTACK_IDS = new Set(attacks);
+    for (const card of CARDS) CARD_MAP[card.id] = card;
+    buildCodex();
+    el.openGuideTitleBtn.disabled = false;
+    setLobby(false);
+  } catch {
+    el.lobbyStatus.textContent = '카드 정보를 불러올 수 없습니다. 서버 주소를 확인하고 새로고침하세요.';
+  }
+}
+
+buildTimelineGrid();
+resizeCanvas();
+updateHud();
+loadCards();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
